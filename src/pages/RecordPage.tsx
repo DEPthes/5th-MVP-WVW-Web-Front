@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { useFaceLandmarkerMetrics } from "@/hooks/useFaceLandmarkerMetrics"
 import { useMediaRecorderCapture } from "@/hooks/useMediaRecorderCapture"
+import type { FacialMetrics } from "@/types"
 
 export function RecordPage() {
   const { status, error, videoBlob, videoPreviewRef, start, stop } =
     useMediaRecorderCapture()
+  const faceMetrics = useFaceLandmarkerMetrics()
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null)
+  const [facialMetrics, setFacialMetrics] = useState<FacialMetrics | null>(null)
 
   useEffect(() => {
     if (!videoBlob) return
@@ -13,6 +17,21 @@ export function RecordPage() {
     setPlaybackUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [videoBlob])
+
+  const handleStart = async () => {
+    setFacialMetrics(null)
+    await start()
+    if (videoPreviewRef.current) {
+      faceMetrics.start(videoPreviewRef.current)
+    }
+  }
+
+  const handleStop = () => {
+    stop()
+    const metrics = faceMetrics.stop()
+    setFacialMetrics(metrics)
+    console.log("facial metrics", metrics)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -28,14 +47,14 @@ export function RecordPage() {
 
       <div className="flex gap-2">
         <Button
-          onClick={start}
+          onClick={handleStart}
           disabled={status === "recording" || status === "requesting"}
         >
           녹화 시작
         </Button>
         <Button
           variant="outline"
-          onClick={stop}
+          onClick={handleStop}
           disabled={status !== "recording"}
         >
           녹화 종료
@@ -45,9 +64,19 @@ export function RecordPage() {
       {status === "error" && (
         <p className="text-sm text-destructive">{error}</p>
       )}
+      {faceMetrics.error && (
+        <p className="text-sm text-destructive">{faceMetrics.error}</p>
+      )}
 
       {playbackUrl && (
         <video controls src={playbackUrl} className="w-80 rounded-lg" />
+      )}
+
+      {facialMetrics && (
+        <p className="text-sm text-muted-foreground">
+          아이컨택 비율: {(facialMetrics.eyeContactRatio * 100).toFixed(0)}% ·
+          표정 변화 횟수: {facialMetrics.expressionChanges}
+        </p>
       )}
     </div>
   )
