@@ -3,6 +3,8 @@ import type { FacialMetrics } from "@/types"
 export interface FrameSample {
   eyeContact: boolean
   expressionScore: number
+  blinkScore: number
+  timestampMs: number
 }
 
 interface BlendshapeCategory {
@@ -10,9 +12,10 @@ interface BlendshapeCategory {
   score: number
 }
 
-// ponytail: 아이컨택/표정변화 판정 임계치는 실제 데이터로 튜닝 필요한 자리표시자
+// ponytail: 아이컨택/표정변화/깜빡임 판정 임계치는 실제 데이터로 튜닝 필요한 자리표시자
 export const EYE_LOOK_THRESHOLD = 0.3
 export const EXPRESSION_DELTA_THRESHOLD = 0.15
+export const BLINK_SCORE_THRESHOLD = 0.5
 
 const EXPRESSION_CATEGORIES = [
   "mouthSmileLeft",
@@ -21,7 +24,10 @@ const EXPRESSION_CATEGORIES = [
   "jawOpen",
 ]
 
-export function extractSample(categories: BlendshapeCategory[]): FrameSample {
+export function extractSample(
+  categories: BlendshapeCategory[],
+  timestampMs = 0
+): FrameSample {
   const scoreOf = (name: string) =>
     categories.find((c) => c.categoryName === name)?.score ?? 0
 
@@ -34,12 +40,34 @@ export function extractSample(categories: BlendshapeCategory[]): FrameSample {
     0
   )
 
-  return { eyeContact, expressionScore }
+  const blinkScore = Math.max(scoreOf("eyeBlinkLeft"), scoreOf("eyeBlinkRight"))
+
+  return { eyeContact, expressionScore, blinkScore, timestampMs }
+}
+
+function countBlinkEdges(samples: FrameSample[]): number {
+  let edges = 0
+  let previousBlinkScore = samples[0].blinkScore
+  for (const sample of samples.slice(1)) {
+    if (
+      sample.blinkScore >= BLINK_SCORE_THRESHOLD &&
+      previousBlinkScore < BLINK_SCORE_THRESHOLD
+    ) {
+      edges += 1
+    }
+    previousBlinkScore = sample.blinkScore
+  }
+  return edges
 }
 
 export function summarizeSamples(samples: FrameSample[]): FacialMetrics {
   if (samples.length === 0) {
-    return { eyeContactRatio: 0, expressionChanges: 0 }
+    return {
+      eyeContactRatio: 0,
+      expressionChanges: 0,
+      blinkRate: 0,
+      expressionTimeline: [],
+    }
   }
 
   const eyeContactRatio =
@@ -54,5 +82,10 @@ export function summarizeSamples(samples: FrameSample[]): FacialMetrics {
     previousScore = sample.expressionScore
   }
 
-  return { eyeContactRatio, expressionChanges }
+  const durationSeconds =
+    (samples[samples.length - 1].timestampMs - samples[0].timestampMs) / 1000
+  const blinkRate =
+    durationSeconds > 0 ? (countBlinkEdges(samples) / durationSeconds) * 60 : 0
+
+  return { eyeContactRatio, expressionChanges, blinkRate, expressionTimeline: [] }
 }
