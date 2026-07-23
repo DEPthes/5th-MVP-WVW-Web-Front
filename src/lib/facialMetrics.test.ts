@@ -1,20 +1,88 @@
 import { describe, expect, it } from "vitest"
-import { extractSample, summarizeSamples } from "@/lib/facialMetrics"
+import type { Matrix } from "@mediapipe/tasks-vision"
+import { computeHeadPoseAngles, extractSample, summarizeSamples } from "@/lib/facialMetrics"
+
+function rotationMatrixYawDeg(yawDeg: number): Matrix {
+  const yawRad = (yawDeg * Math.PI) / 180
+  const cos = Math.cos(yawRad)
+  const sin = Math.sin(yawRad)
+  // 3x3 회전(Y축) + 4x4 동차좌표, MediaPipe Matrix는 column-major 평탄화
+  const rows = [
+    [cos, 0, sin, 0],
+    [0, 1, 0, 0],
+    [-sin, 0, cos, 0],
+    [0, 0, 0, 1],
+  ]
+  const data: number[] = []
+  for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < 4; row++) {
+      data.push(rows[row][col])
+    }
+  }
+  return { rows: 4, columns: 4, data }
+}
+
+const IDENTITY_MATRIX = rotationMatrixYawDeg(0)
 
 describe("extractSample", () => {
   it("treats low eye-look scores as eye contact", () => {
-    const sample = extractSample([
-      { categoryName: "eyeLookOutLeft", score: 0.05 },
-      { categoryName: "eyeLookInRight", score: 0.1 },
-    ])
+    const sample = extractSample(
+      [
+        { categoryName: "eyeLookOutLeft", score: 0.05 },
+        { categoryName: "eyeLookInRight", score: 0.1 },
+      ],
+      0,
+      [IDENTITY_MATRIX]
+    )
 
     expect(sample.eyeContact).toBe(true)
   })
 
   it("treats high eye-look scores as no eye contact", () => {
-    const sample = extractSample([
-      { categoryName: "eyeLookOutLeft", score: 0.8 },
-    ])
+    const sample = extractSample(
+      [{ categoryName: "eyeLookOutLeft", score: 0.8 }],
+      0,
+      [IDENTITY_MATRIX]
+    )
+
+    expect(sample.eyeContact).toBe(false)
+  })
+
+  it("treats low eye-look scores as eye contact when head pose is neutral", () => {
+    const sample = extractSample(
+      [
+        { categoryName: "eyeLookOutLeft", score: 0.05 },
+        { categoryName: "eyeLookInRight", score: 0.1 },
+      ],
+      0,
+      [IDENTITY_MATRIX]
+    )
+
+    expect(sample.eyeContact).toBe(true)
+  })
+
+  it("treats large head yaw as no eye contact even with low eye-look scores", () => {
+    const sample = extractSample(
+      [
+        { categoryName: "eyeLookOutLeft", score: 0.05 },
+        { categoryName: "eyeLookInRight", score: 0.1 },
+      ],
+      0,
+      [rotationMatrixYawDeg(45)]
+    )
+
+    expect(sample.eyeContact).toBe(false)
+  })
+
+  it("treats a missing head pose matrix as no eye contact (conservative)", () => {
+    const sample = extractSample(
+      [
+        { categoryName: "eyeLookOutLeft", score: 0.05 },
+        { categoryName: "eyeLookInRight", score: 0.1 },
+      ],
+      0,
+      []
+    )
 
     expect(sample.eyeContact).toBe(false)
   })
@@ -82,5 +150,18 @@ describe("summarizeSamples", () => {
     ])
 
     expect(result.blinkRate).toBe(0)
+  })
+})
+
+describe("computeHeadPoseAngles", () => {
+  it("returns ~0 yaw for the identity matrix", () => {
+    const { yawDeg, pitchDeg } = computeHeadPoseAngles(IDENTITY_MATRIX)
+    expect(yawDeg).toBeCloseTo(0, 1)
+    expect(pitchDeg).toBeCloseTo(0, 1)
+  })
+
+  it("returns ~30 yaw for a 30-degree yaw rotation matrix", () => {
+    const { yawDeg } = computeHeadPoseAngles(rotationMatrixYawDeg(30))
+    expect(yawDeg).toBeCloseTo(30, 1)
   })
 })

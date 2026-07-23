@@ -1,3 +1,4 @@
+import type { Matrix } from "@mediapipe/tasks-vision"
 import type { FacialMetrics } from "@/types"
 
 export interface FrameSample {
@@ -16,6 +17,8 @@ interface BlendshapeCategory {
 export const EYE_LOOK_THRESHOLD = 0.3
 export const EXPRESSION_DELTA_THRESHOLD = 0.15
 export const BLINK_SCORE_THRESHOLD = 0.5
+export const HEAD_YAW_THRESHOLD_DEG = 20
+export const HEAD_PITCH_THRESHOLD_DEG = 20
 
 const EXPRESSION_CATEGORIES = [
   "mouthSmileLeft",
@@ -24,16 +27,48 @@ const EXPRESSION_CATEGORIES = [
   "jawOpen",
 ]
 
+function matrixAt(matrix: Matrix, row: number, col: number): number {
+  // MediaPipe Matrix.data는 column-major로 평탄화되어 있음
+  return matrix.data[col * matrix.rows + row]
+}
+
+export function computeHeadPoseAngles(matrix: Matrix): {
+  yawDeg: number
+  pitchDeg: number
+} {
+  const m02 = matrixAt(matrix, 0, 2)
+  const m12 = matrixAt(matrix, 1, 2)
+  const m22 = matrixAt(matrix, 2, 2)
+
+  const yawRad = Math.asin(Math.max(-1, Math.min(1, m02)))
+  const pitchRad = Math.atan2(-m12, m22)
+
+  return { yawDeg: (yawRad * 180) / Math.PI, pitchDeg: (pitchRad * 180) / Math.PI }
+}
+
+function isHeadPoseNormal(matrices: Matrix[]): boolean {
+  const matrix = matrices[0]
+  if (!matrix) return false // head pose 미검출 프레임은 보수적으로 응시 아님 처리
+
+  const { yawDeg, pitchDeg } = computeHeadPoseAngles(matrix)
+  return (
+    Math.abs(yawDeg) < HEAD_YAW_THRESHOLD_DEG &&
+    Math.abs(pitchDeg) < HEAD_PITCH_THRESHOLD_DEG
+  )
+}
+
 export function extractSample(
   categories: BlendshapeCategory[],
-  timestampMs = 0
+  timestampMs = 0,
+  matrices: Matrix[] = []
 ): FrameSample {
   const scoreOf = (name: string) =>
     categories.find((c) => c.categoryName === name)?.score ?? 0
 
   const lookOut = Math.max(scoreOf("eyeLookOutLeft"), scoreOf("eyeLookOutRight"))
   const lookIn = Math.max(scoreOf("eyeLookInLeft"), scoreOf("eyeLookInRight"))
-  const eyeContact = Math.max(lookOut, lookIn) < EYE_LOOK_THRESHOLD
+  const eyeLookNormal = Math.max(lookOut, lookIn) < EYE_LOOK_THRESHOLD
+  const eyeContact = eyeLookNormal && isHeadPoseNormal(matrices)
 
   const expressionScore = EXPRESSION_CATEGORIES.reduce(
     (sum, name) => sum + scoreOf(name),
