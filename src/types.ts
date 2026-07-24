@@ -25,6 +25,12 @@ export interface FacialMetrics {
   expressionTimeline: number[]
 }
 
+export interface VoiceMetrics {
+  fillerWordCount: number
+  quietRatio: number
+  trembleRatio: number
+}
+
 export interface AnswerRecord {
   id: string
   questionId: string
@@ -33,6 +39,7 @@ export interface AnswerRecord {
   feedbackText: string | null
   durationSeconds: number
   facialMetrics: FacialMetrics
+  voiceMetrics: VoiceMetrics
   status: ProcessingStatus
 }
 
