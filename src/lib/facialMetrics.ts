@@ -3,7 +3,9 @@ import type { FacialMetrics } from "@/types"
 
 export interface FrameSample {
   eyeContact: boolean
-  expressionScore: number
+  likabilityScore: number
+  tensionScore: number
+  neutralScore: number
   blinkScore: number
   timestampMs: number
 }
@@ -13,19 +15,23 @@ interface BlendshapeCategory {
   score: number
 }
 
-// ponytail: 아이컨택/표정변화/깜빡임 판정 임계치는 실제 데이터로 튜닝 필요한 자리표시자
+// ponytail: 아이컨택/깜빡임 판정 임계치는 실제 데이터로 튜닝 필요한 자리표시자
 export const EYE_LOOK_THRESHOLD = 0.3
-export const EXPRESSION_DELTA_THRESHOLD = 0.15
 export const BLINK_SCORE_THRESHOLD = 0.5
 export const HEAD_YAW_THRESHOLD_DEG = 20
 export const HEAD_PITCH_THRESHOLD_DEG = 20
 
-const EXPRESSION_CATEGORIES = [
-  "mouthSmileLeft",
-  "mouthSmileRight",
-  "browInnerUp",
-  "jawOpen",
+// ponytail: 호감도/긴장도/무표정도 카테고리 구성은 휴리스틱 — 실측 데이터로 재검토 필요한 자리표시자
+export const LIKABILITY_CATEGORIES = [
+  "mouthSmileLeft", "mouthSmileRight", "cheekSquintLeft", "cheekSquintRight",
+  "browOuterUpLeft", "browOuterUpRight", "browInnerUp",
 ]
+export const TENSION_CATEGORIES = [
+  "mouthPressLeft", "mouthPressRight", "mouthRollUpper", "mouthRollLower",
+  "browDownLeft", "browDownRight", "eyeSquintLeft", "eyeSquintRight",
+  "mouthShrugUpper", "mouthShrugLower",
+]
+export const NEUTRAL_CATEGORIES = ["_neutral"]
 
 function matrixAt(matrix: Matrix, row: number, col: number): number {
   // MediaPipe Matrix.data는 column-major로 평탄화되어 있음
@@ -70,14 +76,16 @@ export function extractSample(
   const eyeLookNormal = Math.max(lookOut, lookIn) < EYE_LOOK_THRESHOLD
   const eyeContact = eyeLookNormal && isHeadPoseNormal(matrices)
 
-  const expressionScore = EXPRESSION_CATEGORIES.reduce(
-    (sum, name) => sum + scoreOf(name),
-    0
-  )
+  const averageOf = (names: string[]) =>
+    names.reduce((sum, name) => sum + scoreOf(name), 0) / names.length
+
+  const likabilityScore = averageOf(LIKABILITY_CATEGORIES)
+  const tensionScore = averageOf(TENSION_CATEGORIES)
+  const neutralScore = averageOf(NEUTRAL_CATEGORIES)
 
   const blinkScore = Math.max(scoreOf("eyeBlinkLeft"), scoreOf("eyeBlinkRight"))
 
-  return { eyeContact, expressionScore, blinkScore, timestampMs }
+  return { eyeContact, likabilityScore, tensionScore, neutralScore, blinkScore, timestampMs }
 }
 
 function countBlinkEdges(samples: FrameSample[]): number {
@@ -99,43 +107,27 @@ export function summarizeSamples(samples: FrameSample[]): FacialMetrics {
   if (samples.length === 0) {
     return {
       eyeContactRatio: 0,
-      expressionChanges: 0,
       blinkRate: 0,
-      expressionTimeline: [],
+      likabilityScore: 0,
+      tensionScore: 0,
+      neutralScore: 0,
     }
   }
 
   const eyeContactRatio =
     samples.filter((s) => s.eyeContact).length / samples.length
 
-  let expressionChanges = 0
-  let previousScore = samples[0].expressionScore
-  for (const sample of samples.slice(1)) {
-    if (Math.abs(sample.expressionScore - previousScore) > EXPRESSION_DELTA_THRESHOLD) {
-      expressionChanges += 1
-    }
-    previousScore = sample.expressionScore
-  }
+  const averageAcrossSamples = (pick: (s: FrameSample) => number) =>
+    samples.reduce((sum, s) => sum + pick(s), 0) / samples.length
+
+  const likabilityScore = averageAcrossSamples((s) => s.likabilityScore)
+  const tensionScore = averageAcrossSamples((s) => s.tensionScore)
+  const neutralScore = averageAcrossSamples((s) => s.neutralScore)
 
   const durationSeconds =
     (samples[samples.length - 1].timestampMs - samples[0].timestampMs) / 1000
   const blinkRate =
     durationSeconds > 0 ? (countBlinkEdges(samples) / durationSeconds) * 60 : 0
 
-  const startMs = samples[0].timestampMs
-  const endMs = samples[samples.length - 1].timestampMs
-  const bucketCount = Math.floor((endMs - startMs) / 1000) + 1
-  const buckets: number[][] = Array.from({ length: bucketCount }, () => [])
-  for (const sample of samples) {
-    const index = Math.min(
-      bucketCount - 1,
-      Math.floor((sample.timestampMs - startMs) / 1000)
-    )
-    buckets[index].push(sample.expressionScore)
-  }
-  const expressionTimeline = buckets.map((scores) =>
-    scores.length === 0 ? 0 : scores.reduce((sum, s) => sum + s, 0) / scores.length
-  )
-
-  return { eyeContactRatio, expressionChanges, blinkRate, expressionTimeline }
+  return { eyeContactRatio, blinkRate, likabilityScore, tensionScore, neutralScore }
 }

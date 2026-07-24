@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 import type { Matrix } from "@mediapipe/tasks-vision"
-import { computeHeadPoseAngles, extractSample, summarizeSamples } from "@/lib/facialMetrics"
+import {
+  computeHeadPoseAngles,
+  extractSample,
+  summarizeSamples,
+} from "@/lib/facialMetrics"
 
 function rotationMatrixYawDeg(yawDeg: number): Matrix {
   const yawRad = (yawDeg * Math.PI) / 180
@@ -25,7 +29,7 @@ function rotationMatrixYawDeg(yawDeg: number): Matrix {
 const IDENTITY_MATRIX = rotationMatrixYawDeg(0)
 
 describe("extractSample", () => {
-  it("treats low eye-look scores as eye contact", () => {
+  it("treats low eye-look scores as eye contact when head pose is neutral", () => {
     const sample = extractSample(
       [
         { categoryName: "eyeLookOutLeft", score: 0.05 },
@@ -46,19 +50,6 @@ describe("extractSample", () => {
     )
 
     expect(sample.eyeContact).toBe(false)
-  })
-
-  it("treats low eye-look scores as eye contact when head pose is neutral", () => {
-    const sample = extractSample(
-      [
-        { categoryName: "eyeLookOutLeft", score: 0.05 },
-        { categoryName: "eyeLookInRight", score: 0.1 },
-      ],
-      0,
-      [IDENTITY_MATRIX]
-    )
-
-    expect(sample.eyeContact).toBe(true)
   })
 
   it("treats large head yaw as no eye contact even with low eye-look scores", () => {
@@ -87,84 +78,37 @@ describe("extractSample", () => {
     expect(sample.eyeContact).toBe(false)
   })
 
-  it("sums only the expression categories, ignoring unrelated ones", () => {
+  it("averages the likability categories, treating missing ones as 0", () => {
     const sample = extractSample([
-      { categoryName: "mouthSmileLeft", score: 0.4 },
-      { categoryName: "mouthSmileRight", score: 0.3 },
-      { categoryName: "eyeBlinkLeft", score: 0.9 },
+      { categoryName: "mouthSmileLeft", score: 0.7 },
+      { categoryName: "mouthSmileRight", score: 0.7 },
     ])
 
-    expect(sample.expressionScore).toBeCloseTo(0.7)
-  })
-})
-
-describe("summarizeSamples", () => {
-  it("returns zeros for no samples", () => {
-    expect(summarizeSamples([])).toEqual({
-      eyeContactRatio: 0,
-      expressionChanges: 0,
-      blinkRate: 0,
-      expressionTimeline: [],
-    })
+    expect(sample.likabilityScore).toBeCloseTo((0.7 + 0.7) / 7)
   })
 
-  it("computes the eye contact ratio", () => {
-    const result = summarizeSamples([
-      { eyeContact: true, expressionScore: 0, blinkScore: 0, timestampMs: 0 },
-      { eyeContact: true, expressionScore: 0, blinkScore: 0, timestampMs: 1000 },
-      { eyeContact: false, expressionScore: 0, blinkScore: 0, timestampMs: 2000 },
-      { eyeContact: false, expressionScore: 0, blinkScore: 0, timestampMs: 3000 },
+  it("averages the tension categories", () => {
+    const sample = extractSample([
+      { categoryName: "browDownLeft", score: 0.5 },
+      { categoryName: "browDownRight", score: 0.3 },
     ])
 
-    expect(result.eyeContactRatio).toBe(0.5)
+    expect(sample.tensionScore).toBeCloseTo((0.5 + 0.3) / 10)
   })
 
-  it("counts expression changes that cross the threshold", () => {
-    const result = summarizeSamples([
-      { eyeContact: true, expressionScore: 0, blinkScore: 0, timestampMs: 0 },
-      { eyeContact: true, expressionScore: 0.05, blinkScore: 0, timestampMs: 1000 }, // small change, ignored
-      { eyeContact: true, expressionScore: 0.5, blinkScore: 0, timestampMs: 2000 }, // big jump, counted
-      { eyeContact: true, expressionScore: 0.52, blinkScore: 0, timestampMs: 3000 }, // small change, ignored
-      { eyeContact: true, expressionScore: 0.05, blinkScore: 0, timestampMs: 4000 }, // big drop, counted
-    ])
+  it("uses _neutral directly as the neutral score", () => {
+    const sample = extractSample([{ categoryName: "_neutral", score: 0.9 }])
 
-    expect(result.expressionChanges).toBe(2)
+    expect(sample.neutralScore).toBeCloseTo(0.9)
   })
 
-  it("computes blink rate from rising edges over a 10 second span", () => {
-    const result = summarizeSamples([
-      { eyeContact: true, expressionScore: 0, blinkScore: 0, timestampMs: 0 },
-      { eyeContact: true, expressionScore: 0, blinkScore: 0.9, timestampMs: 2000 }, // edge 1
-      { eyeContact: true, expressionScore: 0, blinkScore: 0.9, timestampMs: 4000 }, // still closed, no new edge
-      { eyeContact: true, expressionScore: 0, blinkScore: 0, timestampMs: 6000 },
-      { eyeContact: true, expressionScore: 0, blinkScore: 0.9, timestampMs: 8000 }, // edge 2
-      { eyeContact: true, expressionScore: 0, blinkScore: 0, timestampMs: 10000 },
+  it("computes blink score from the max of left/right eye blink", () => {
+    const sample = extractSample([
+      { categoryName: "eyeBlinkLeft", score: 0.2 },
+      { categoryName: "eyeBlinkRight", score: 0.6 },
     ])
 
-    expect(result.blinkRate).toBe(12) // 2 edges / 10s * 60
-  })
-
-  it("returns zero blink rate when duration is zero", () => {
-    const result = summarizeSamples([
-      { eyeContact: true, expressionScore: 0, blinkScore: 0, timestampMs: 0 },
-    ])
-
-    expect(result.blinkRate).toBe(0)
-  })
-
-  it("buckets expression scores into 1-second averages", () => {
-    const result = summarizeSamples([
-      { eyeContact: true, expressionScore: 0.2, blinkScore: 0, timestampMs: 0 },
-      { eyeContact: true, expressionScore: 0.4, blinkScore: 0, timestampMs: 500 },
-      { eyeContact: true, expressionScore: 0.6, blinkScore: 0, timestampMs: 1200 },
-      { eyeContact: true, expressionScore: 0.8, blinkScore: 0, timestampMs: 1800 },
-      { eyeContact: true, expressionScore: 1.0, blinkScore: 0, timestampMs: 2100 },
-    ])
-
-    expect(result.expressionTimeline).toHaveLength(3)
-    expect(result.expressionTimeline[0]).toBeCloseTo(0.3) // (0.2+0.4)/2
-    expect(result.expressionTimeline[1]).toBeCloseTo(0.7) // (0.6+0.8)/2
-    expect(result.expressionTimeline[2]).toBeCloseTo(1.0) // (1.0)/1
+    expect(sample.blinkScore).toBeCloseTo(0.6)
   })
 })
 
@@ -178,5 +122,60 @@ describe("computeHeadPoseAngles", () => {
   it("returns ~30 yaw for a 30-degree yaw rotation matrix", () => {
     const { yawDeg } = computeHeadPoseAngles(rotationMatrixYawDeg(30))
     expect(yawDeg).toBeCloseTo(30, 1)
+  })
+})
+
+describe("summarizeSamples", () => {
+  it("returns zeros for no samples", () => {
+    expect(summarizeSamples([])).toEqual({
+      eyeContactRatio: 0,
+      blinkRate: 0,
+      likabilityScore: 0,
+      tensionScore: 0,
+      neutralScore: 0,
+    })
+  })
+
+  it("computes the eye contact ratio", () => {
+    const result = summarizeSamples([
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0, timestampMs: 0 },
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0, timestampMs: 1000 },
+      { eyeContact: false, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0, timestampMs: 2000 },
+      { eyeContact: false, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0, timestampMs: 3000 },
+    ])
+
+    expect(result.eyeContactRatio).toBe(0.5)
+  })
+
+  it("averages likability/tension/neutral scores across all frames", () => {
+    const result = summarizeSamples([
+      { eyeContact: true, likabilityScore: 0.2, tensionScore: 0.8, neutralScore: 0.1, blinkScore: 0, timestampMs: 0 },
+      { eyeContact: true, likabilityScore: 0.6, tensionScore: 0.4, neutralScore: 0.3, blinkScore: 0, timestampMs: 1000 },
+    ])
+
+    expect(result.likabilityScore).toBeCloseTo(0.4)
+    expect(result.tensionScore).toBeCloseTo(0.6)
+    expect(result.neutralScore).toBeCloseTo(0.2)
+  })
+
+  it("computes blink rate from rising edges over a 10 second span", () => {
+    const result = summarizeSamples([
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0, timestampMs: 0 },
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0.9, timestampMs: 2000 },
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0.9, timestampMs: 4000 },
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0, timestampMs: 6000 },
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0.9, timestampMs: 8000 },
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0, timestampMs: 10000 },
+    ])
+
+    expect(result.blinkRate).toBe(12) // 2 edges / 10s * 60
+  })
+
+  it("returns zero blink rate when duration is zero", () => {
+    const result = summarizeSamples([
+      { eyeContact: true, likabilityScore: 0, tensionScore: 0, neutralScore: 0, blinkScore: 0, timestampMs: 0 },
+    ])
+
+    expect(result.blinkRate).toBe(0)
   })
 })
