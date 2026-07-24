@@ -43,6 +43,11 @@ export function ResultPage() {
             {answer.durationSeconds}초
           </p>
           <ExpressionSparkline values={answer.facialMetrics.expressionTimeline} />
+          <p className="text-sm text-muted-foreground">
+            필러워드: {answer.voiceMetrics.fillerWordCount}회 · 작은 목소리 구간:{" "}
+            {(answer.voiceMetrics.quietRatio * 100).toFixed(0)}% · 떨림 구간:{" "}
+            {(answer.voiceMetrics.trembleRatio * 100).toFixed(0)}%
+          </p>
           <video controls src={answer.videoUrl} className="w-80 rounded-lg" />
         </div>
       )}
