@@ -1,5 +1,4 @@
 import { useParams } from "react-router-dom"
-import { ExpressionSparkline } from "@/components/ExpressionSparkline"
 import { getAnswer } from "@/lib/api"
 import { usePolling } from "@/hooks/usePolling"
 import type { AnswerRecord } from "@/types"
@@ -38,11 +37,12 @@ export function ResultPage() {
           <p>{answer.feedbackText}</p>
           <p className="text-sm text-muted-foreground">
             아이컨택 비율: {(answer.facialMetrics.eyeContactRatio * 100).toFixed(0)}% ·
-            표정 변화 횟수: {answer.facialMetrics.expressionChanges} · 분당 깜빡임:{" "}
-            {answer.facialMetrics.blinkRate.toFixed(1)}회 · 답변 시간:{" "}
+            분당 깜빡임: {answer.facialMetrics.blinkRate.toFixed(1)}회 · 호감도:{" "}
+            {(answer.facialMetrics.likabilityScore * 100).toFixed(0)}% · 긴장도:{" "}
+            {(answer.facialMetrics.tensionScore * 100).toFixed(0)}% · 무표정도:{" "}
+            {(answer.facialMetrics.neutralScore * 100).toFixed(0)}% · 답변 시간:{" "}
             {answer.durationSeconds}초
           </p>
-          <ExpressionSparkline values={answer.facialMetrics.expressionTimeline} />
           <p className="text-sm text-muted-foreground">
             필러워드: {answer.voiceMetrics.fillerWordCount}회 · 작은 목소리 구간:{" "}
             {(answer.voiceMetrics.quietRatio * 100).toFixed(0)}% · 떨림 구간:{" "}

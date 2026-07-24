@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { ExpressionSparkline } from "@/components/ExpressionSparkline"
 import { Button } from "@/components/ui/button"
 import { useFaceLandmarkerMetrics } from "@/hooks/useFaceLandmarkerMetrics"
 import { useFillerWordCounter } from "@/hooks/useFillerWordCounter"
@@ -100,14 +99,13 @@ export function RecordPage() {
       )}
 
       {facialMetrics && (
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-muted-foreground">
-            아이컨택 비율: {(facialMetrics.eyeContactRatio * 100).toFixed(0)}% ·
-            표정 변화 횟수: {facialMetrics.expressionChanges} · 분당 깜빡임:{" "}
-            {facialMetrics.blinkRate.toFixed(1)}회
-          </p>
-          <ExpressionSparkline values={facialMetrics.expressionTimeline} />
-        </div>
+        <p className="text-sm text-muted-foreground">
+          아이컨택 비율: {(facialMetrics.eyeContactRatio * 100).toFixed(0)}% ·
+          분당 깜빡임: {facialMetrics.blinkRate.toFixed(1)}회 · 호감도:{" "}
+          {(facialMetrics.likabilityScore * 100).toFixed(0)}% · 긴장도:{" "}
+          {(facialMetrics.tensionScore * 100).toFixed(0)}% · 무표정도:{" "}
+          {(facialMetrics.neutralScore * 100).toFixed(0)}%
+        </p>
       )}
 
       {voiceMetricsResult && (
