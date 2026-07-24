@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { ExpressionSparkline } from "@/components/ExpressionSparkline"
 import { Button } from "@/components/ui/button"
 import { useFaceLandmarkerMetrics } from "@/hooks/useFaceLandmarkerMetrics"
 import { useMediaRecorderCapture } from "@/hooks/useMediaRecorderCapture"
@@ -73,10 +74,14 @@ export function RecordPage() {
       )}
 
       {facialMetrics && (
-        <p className="text-sm text-muted-foreground">
-          아이컨택 비율: {(facialMetrics.eyeContactRatio * 100).toFixed(0)}% ·
-          표정 변화 횟수: {facialMetrics.expressionChanges}
-        </p>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-muted-foreground">
+            아이컨택 비율: {(facialMetrics.eyeContactRatio * 100).toFixed(0)}% ·
+            표정 변화 횟수: {facialMetrics.expressionChanges} · 분당 깜빡임:{" "}
+            {facialMetrics.blinkRate.toFixed(1)}회
+          </p>
+          <ExpressionSparkline values={facialMetrics.expressionTimeline} />
+        </div>
       )}
     </div>
   )
