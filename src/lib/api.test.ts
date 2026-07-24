@@ -65,7 +65,13 @@ describe("apiFetch", () => {
     await uploadAnswer(
       "q1",
       new Blob(["x"]),
-      { eyeContactRatio: 0.8, expressionChanges: 3, blinkRate: 14, expressionTimeline: [0.1, 0.3, 0.2] },
+      {
+        eyeContactRatio: 0.8,
+        blinkRate: 14,
+        likabilityScore: 0.3,
+        tensionScore: 0.1,
+        neutralScore: 0.6,
+      },
       { fillerWordCount: 2, quietRatio: 0.1, trembleRatio: 0.05 }
     )
 

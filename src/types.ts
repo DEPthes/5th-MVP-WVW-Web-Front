@@ -20,9 +20,10 @@ export interface QuestionSet {
 
 export interface FacialMetrics {
   eyeContactRatio: number
-  expressionChanges: number
   blinkRate: number
-  expressionTimeline: number[]
+  likabilityScore: number
+  tensionScore: number
+  neutralScore: number
 }
 
 export interface VoiceMetrics {
