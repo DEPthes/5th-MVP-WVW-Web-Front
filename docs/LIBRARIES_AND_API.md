@@ -73,13 +73,17 @@ MediaPipe 이후 추가된 얼굴/음성 지표는 라이브러리를 새로 설
 **`FacialMetrics`** (`src/lib/facialMetrics.ts`가 계산, `src/types.ts`에 정의):
 ```ts
 {
-  eyeContactRatio: number      // 0~1, 눈맞춤(eyeLook 정상 AND head pose 정상) 프레임 비율
-  expressionChanges: number    // 표정 점수가 임계치 이상 변한 횟수
-  blinkRate: number            // 분당 깜빡임 횟수 (rising-edge 카운트 / 경과시간 * 60)
-  expressionTimeline: number[] // 1초 버킷 평균 표정 점수, 길이 = 녹화 시간(초) 반올림
+  eyeContactRatio: number  // 0~1, 눈맞춤(eyeLook 정상 AND head pose 정상) 프레임 비율
+  blinkRate: number        // 분당 깜빡임 횟수 (rising-edge 카운트 / 경과시간 * 60)
+  likabilityScore: number  // 0~1, 호감도 블렌드셰이프군(미소/볼조임/눈썹 등) 프레임 평균의 녹화 전체 평균
+  tensionScore: number     // 0~1, 긴장도 블렌드셰이프군(입다뭄/찡그림 등) 동일 방식
+  neutralScore: number     // 0~1, MediaPipe의 `_neutral` 블렌드셰이프 값 자체의 녹화 전체 평균
 }
 ```
-예시: `{ "eyeContactRatio": 0.82, "expressionChanges": 5, "blinkRate": 14.2, "expressionTimeline": [0.1, 0.3, 0.25, 0.4] }`
+예시: `{ "eyeContactRatio": 0.82, "blinkRate": 14.2, "likabilityScore": 0.31, "tensionScore": 0.12, "neutralScore": 0.55 }`
+
+호감도/긴장도/무표정도는 근육 움직임(블렌드셰이프) 기반 휴리스틱 추정치이지 실제 감정 인식이 아님 —
+카테고리 구성은 `docs/superpowers/specs/2026-07-24-expression-valence-scores-design.md` 참고.
 
 **`VoiceMetrics`** (`src/lib/voiceMetrics.ts` + `src/lib/fillerWords.ts`가 계산):
 ```ts
@@ -122,9 +126,11 @@ MediaPipe 이후 추가된 얼굴/음성 지표는 라이브러리를 새로 설
 | 이름 | 위치 | 현재 값 |
 |---|---|---|
 | `EYE_LOOK_THRESHOLD` | `facialMetrics.ts` | 0.3 |
-| `EXPRESSION_DELTA_THRESHOLD` | `facialMetrics.ts` | 0.15 |
 | `BLINK_SCORE_THRESHOLD` | `facialMetrics.ts` | 0.5 |
 | `HEAD_YAW_THRESHOLD_DEG` / `HEAD_PITCH_THRESHOLD_DEG` | `facialMetrics.ts` | 20 |
+| `LIKABILITY_CATEGORIES` | `facialMetrics.ts` | `mouthSmileLeft/Right`, `cheekSquintLeft/Right`, `browOuterUpLeft/Right`, `browInnerUp` |
+| `TENSION_CATEGORIES` | `facialMetrics.ts` | `mouthPressLeft/Right`, `mouthRollUpper/Lower`, `browDownLeft/Right`, `eyeSquintLeft/Right`, `mouthShrugUpper/Lower` |
+| `NEUTRAL_CATEGORIES` | `facialMetrics.ts` | `_neutral` |
 | `QUIET_RMS_THRESHOLD` | `voiceMetrics.ts` | 0.02 |
 | `PITCH_DETECTION_MIN_RMS` | `voiceMetrics.ts` | 0.01 |
 | `TREMBLE_PITCH_STDDEV_THRESHOLD_HZ` | `voiceMetrics.ts` | 15 |

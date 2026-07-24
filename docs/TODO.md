@@ -6,13 +6,12 @@
 - 라우팅 스켈레톤: 7개 경로 (`/login`, `/signup`, `/materials/new`, `/questions`, `/record`, `/result/:answerId`, `/history`)
 - `src/lib/api.ts` — fetch 래퍼(토큰 첨부, FormData 처리, 에러 핸들링) + 백엔드 엔드포인트별 함수
 - `src/hooks/useMediaRecorderCapture.ts` — 카메라/마이크 녹화, `RecordPage`에 미리보기+시작/종료 버튼 연결, 언마운트 시 트랙/레코더 정리
-- `src/hooks/useFaceLandmarkerMetrics.ts` + `src/lib/facialMetrics.ts` — MediaPipe로 얼굴 지표 집계(순수 로직 분리, 테스트 완료): 아이컨택 비율(eyeLook AND head pose), 표정 변화 횟수, 분당 깜빡임(blinkRate), 표정 변화 타임라인(expressionTimeline)
+- `src/hooks/useFaceLandmarkerMetrics.ts` + `src/lib/facialMetrics.ts` — MediaPipe로 얼굴 지표 집계(순수 로직 분리, 테스트 완료): 아이컨택 비율(eyeLook AND head pose), 분당 깜빡임(blinkRate), 호감도/긴장도/무표정도(likabilityScore/tensionScore/neutralScore, 블렌드셰이프 카테고리 평균 기반 휴리스틱)
 - `src/hooks/useVoiceMetrics.ts` + `src/lib/voiceMetrics.ts` — Web Audio API로 목소리 지표 집계: 작은 목소리 구간 비율(quietRatio), 떨림 구간 비율(trembleRatio)
 - `src/hooks/useFillerWordCounter.ts` + `src/lib/fillerWords.ts` — Web Speech API로 필러워드("음"/"어"/"그"/"저기"/"니까") 카운트, 미지원 브라우저는 에러 상태로 표시
-- `src/components/ExpressionSparkline.tsx` — 표정 타임라인 SVG 스파크라인, `RecordPage`/`ResultPage` 공용
-- `RecordPage`/`ResultPage`에 위 얼굴·목소리 지표 전부 표시. 언마운트 시 카메라/마이크/AudioContext/SpeechRecognition 정리
+- `RecordPage`/`ResultPage`에 위 얼굴·목소리 지표 전부 표시. 언마운트 시 카메라/마이크/AudioContext/SpeechRecognition 정리, 미리보기 좌우 미러링(CSS만, 실제 녹화본은 원본 유지)
 - `src/lib/polling.ts` + `src/hooks/usePolling.ts` — 처리상태 폴링 유틸, `ResultPage`에 연결
-- Vitest 테스트 32개 (api/facialMetrics/voiceMetrics/fillerWords/polling 순수 로직)
+- Vitest 테스트 33개 (api/facialMetrics/voiceMetrics/fillerWords/polling 순수 로직)
 - 라이브러리 사용 현황 및 백엔드 전송 데이터 형태: `docs/LIBRARIES_AND_API.md` 참고
 
 ## 남은 작업
