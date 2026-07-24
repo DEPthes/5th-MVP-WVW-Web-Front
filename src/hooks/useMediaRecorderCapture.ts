@@ -12,7 +12,7 @@ export function useMediaRecorderCapture() {
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (): Promise<MediaStream | null> => {
     setError(null)
     setVideoBlob(null)
     setStatus("requesting")
@@ -39,6 +39,7 @@ export function useMediaRecorderCapture() {
       recorderRef.current = recorder
       recorder.start()
       setStatus("recording")
+      return stream
     } catch (err) {
       setError(
         err instanceof Error
@@ -46,6 +47,7 @@ export function useMediaRecorderCapture() {
           : "카메라/마이크 권한을 가져오지 못했습니다."
       )
       setStatus("error")
+      return null
     }
   }, [])
 
