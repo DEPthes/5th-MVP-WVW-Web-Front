@@ -151,6 +151,21 @@ describe("summarizeSamples", () => {
 
     expect(result.blinkRate).toBe(0)
   })
+
+  it("buckets expression scores into 1-second averages", () => {
+    const result = summarizeSamples([
+      { eyeContact: true, expressionScore: 0.2, blinkScore: 0, timestampMs: 0 },
+      { eyeContact: true, expressionScore: 0.4, blinkScore: 0, timestampMs: 500 },
+      { eyeContact: true, expressionScore: 0.6, blinkScore: 0, timestampMs: 1200 },
+      { eyeContact: true, expressionScore: 0.8, blinkScore: 0, timestampMs: 1800 },
+      { eyeContact: true, expressionScore: 1.0, blinkScore: 0, timestampMs: 2100 },
+    ])
+
+    expect(result.expressionTimeline).toHaveLength(3)
+    expect(result.expressionTimeline[0]).toBeCloseTo(0.3) // (0.2+0.4)/2
+    expect(result.expressionTimeline[1]).toBeCloseTo(0.7) // (0.6+0.8)/2
+    expect(result.expressionTimeline[2]).toBeCloseTo(1.0) // (1.0)/1
+  })
 })
 
 describe("computeHeadPoseAngles", () => {

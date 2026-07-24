@@ -122,5 +122,20 @@ export function summarizeSamples(samples: FrameSample[]): FacialMetrics {
   const blinkRate =
     durationSeconds > 0 ? (countBlinkEdges(samples) / durationSeconds) * 60 : 0
 
-  return { eyeContactRatio, expressionChanges, blinkRate, expressionTimeline: [] }
+  const startMs = samples[0].timestampMs
+  const endMs = samples[samples.length - 1].timestampMs
+  const bucketCount = Math.floor((endMs - startMs) / 1000) + 1
+  const buckets: number[][] = Array.from({ length: bucketCount }, () => [])
+  for (const sample of samples) {
+    const index = Math.min(
+      bucketCount - 1,
+      Math.floor((sample.timestampMs - startMs) / 1000)
+    )
+    buckets[index].push(sample.expressionScore)
+  }
+  const expressionTimeline = buckets.map((scores) =>
+    scores.length === 0 ? 0 : scores.reduce((sum, s) => sum + s, 0) / scores.length
+  )
+
+  return { eyeContactRatio, expressionChanges, blinkRate, expressionTimeline }
 }
