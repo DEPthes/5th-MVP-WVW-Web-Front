@@ -4,7 +4,7 @@ import { extractSample, summarizeSamples, type FrameSample } from "@/lib/facialM
 import type { FacialMetrics } from "@/types"
 
 const WASM_BASE_URL =
-  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm"
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm"
 const MODEL_ASSET_URL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
 
@@ -12,8 +12,8 @@ let sharedLandmarkerPromise: Promise<FaceLandmarker> | null = null
 
 function getFaceLandmarker() {
   if (!sharedLandmarkerPromise) {
-    sharedLandmarkerPromise = FilesetResolver.forVisionTasks(WASM_BASE_URL).then(
-      (filesetResolver) =>
+    sharedLandmarkerPromise = FilesetResolver.forVisionTasks(WASM_BASE_URL)
+      .then((filesetResolver) =>
         FaceLandmarker.createFromOptions(filesetResolver, {
           baseOptions: { modelAssetPath: MODEL_ASSET_URL, delegate: "GPU" },
           outputFaceBlendshapes: true,
@@ -21,7 +21,12 @@ function getFaceLandmarker() {
           runningMode: "VIDEO",
           numFaces: 1,
         })
-    )
+      )
+      .catch((err) => {
+        // 로드 실패를 영구 캐싱하지 않음 — 다음 시도에서 재시도 가능하도록 리셋
+        sharedLandmarkerPromise = null
+        throw err
+      })
   }
   return sharedLandmarkerPromise
 }

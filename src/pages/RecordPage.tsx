@@ -66,7 +66,7 @@ export function RecordPage() {
         autoPlay
         muted
         playsInline
-        className="w-80 rounded-lg bg-muted"
+        className="w-80 -scale-x-100 rounded-lg bg-muted"
       />
 
       <div className="flex gap-2">
