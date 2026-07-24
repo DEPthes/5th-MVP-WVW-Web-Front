@@ -17,6 +17,7 @@ function getFaceLandmarker() {
         FaceLandmarker.createFromOptions(filesetResolver, {
           baseOptions: { modelAssetPath: MODEL_ASSET_URL, delegate: "GPU" },
           outputFaceBlendshapes: true,
+          outputFacialTransformationMatrixes: true,
           runningMode: "VIDEO",
           numFaces: 1,
         })
@@ -42,9 +43,11 @@ export function useFaceLandmarkerMetrics() {
 
       const loop = () => {
         if (video.readyState >= 2) {
-          const result = landmarker.detectForVideo(video, performance.now())
+          const ts = performance.now()
+          const result = landmarker.detectForVideo(video, ts)
           const categories = result.faceBlendshapes?.[0]?.categories ?? []
-          samplesRef.current.push(extractSample(categories))
+          const matrices = result.facialTransformationMatrixes ?? []
+          samplesRef.current.push(extractSample(categories, ts, matrices))
         }
         rafIdRef.current = requestAnimationFrame(loop)
       }

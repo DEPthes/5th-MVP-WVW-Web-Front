@@ -21,6 +21,8 @@ export interface QuestionSet {
 export interface FacialMetrics {
   eyeContactRatio: number
   expressionChanges: number
+  blinkRate: number
+  expressionTimeline: number[]
 }
 
 export interface AnswerRecord {
