@@ -52,7 +52,10 @@ export function useMediaRecorderCapture() {
   }, [])
 
   const stop = useCallback(() => {
-    recorderRef.current?.stop()
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.stop()
+    }
+    recorderRef.current = null
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
   }, [])

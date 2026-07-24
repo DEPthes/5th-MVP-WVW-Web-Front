@@ -24,6 +24,16 @@ export function RecordPage() {
     return () => URL.revokeObjectURL(url)
   }, [videoBlob])
 
+  useEffect(() => {
+    return () => {
+      stop()
+      faceMetrics.stop()
+      voiceMetrics.stop()
+      fillerWordCounter.stop()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 언마운트 시 1회만 정리, 각 stop은 useCallback으로 참조가 안정적이다
+  }, [])
+
   const handleStart = async () => {
     setFacialMetrics(null)
     setVoiceMetricsResult(null)
