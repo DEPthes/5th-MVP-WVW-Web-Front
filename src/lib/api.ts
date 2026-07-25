@@ -35,6 +35,12 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     },
   })
 
+  if (res.status === 401) {
+    clearToken()
+    window.location.href = "/login"
+    throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.")
+  }
+
   if (!res.ok) {
     throw new Error(`API error ${res.status}: ${await res.text()}`)
   }

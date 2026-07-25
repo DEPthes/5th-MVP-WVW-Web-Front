@@ -16,7 +16,11 @@ const store: Record<string, string> = {}
   length: 0,
 }
 
-import { clearToken, getAnswer, setToken, uploadAnswer } from "@/lib/api"
+;(globalThis as unknown as { window: { location: { href: string } } }).window = {
+  location: { href: "" },
+}
+
+import { clearToken, getAnswer, getToken, setToken, uploadAnswer } from "@/lib/api"
 
 describe("apiFetch", () => {
   beforeEach(() => {
@@ -76,5 +80,20 @@ describe("apiFetch", () => {
     )
 
     expect(capturedHeaders["Content-Type"]).toBeUndefined()
+  })
+
+  it("clears the token and redirects to /login on a 401 response", async () => {
+    setToken("abc123")
+    globalThis.fetch = vi.fn(
+      async () => new Response("unauthorized", { status: 401 })
+    ) as typeof fetch
+
+    await expect(getAnswer("1")).rejects.toThrow("인증이 만료되었습니다")
+
+    expect(getToken()).toBeNull()
+    expect(
+      (globalThis as unknown as { window: { location: { href: string } } })
+        .window.location.href
+    ).toBe("/login")
   })
 })
