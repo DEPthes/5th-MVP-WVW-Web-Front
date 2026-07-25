@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useFaceLandmarkerMetrics } from "@/hooks/useFaceLandmarkerMetrics"
 import { useFillerWordCounter } from "@/hooks/useFillerWordCounter"
 import { useMediaRecorderCapture } from "@/hooks/useMediaRecorderCapture"
 import { useVoiceMetrics } from "@/hooks/useVoiceMetrics"
+import { uploadAnswer } from "@/lib/api"
 import type { FacialMetrics, VoiceMetrics } from "@/types"
 
 export function RecordPage() {
@@ -12,9 +14,13 @@ export function RecordPage() {
   const faceMetrics = useFaceLandmarkerMetrics()
   const voiceMetrics = useVoiceMetrics()
   const fillerWordCounter = useFillerWordCounter()
+  const { questionId } = useParams<{ questionId: string }>()
+  const navigate = useNavigate()
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null)
   const [facialMetrics, setFacialMetrics] = useState<FacialMetrics | null>(null)
   const [voiceMetricsResult, setVoiceMetricsResult] = useState<VoiceMetrics | null>(null)
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "error">("idle")
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!videoBlob) return
@@ -22,6 +28,25 @@ export function RecordPage() {
     setPlaybackUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [videoBlob])
+
+  function runUpload(blob: Blob, facial: FacialMetrics, voice: VoiceMetrics) {
+    setUploadStatus("uploading")
+    setUploadError(null)
+    uploadAnswer(questionId!, blob, facial, voice)
+      .then((answer) => {
+        navigate(`/result/${answer.id}`)
+      })
+      .catch((err) => {
+        setUploadStatus("error")
+        setUploadError(err instanceof Error ? err.message : "업로드에 실패했습니다.")
+      })
+  }
+
+  useEffect(() => {
+    if (!videoBlob || !facialMetrics || !voiceMetricsResult) return
+    runUpload(videoBlob, facialMetrics, voiceMetricsResult)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- videoBlob이 세 값 중 가장 늦게 도착하므로 그 시점에만 트리거
+  }, [videoBlob, facialMetrics, voiceMetricsResult])
 
   useEffect(() => {
     return () => {
@@ -36,6 +61,8 @@ export function RecordPage() {
   const handleStart = async () => {
     setFacialMetrics(null)
     setVoiceMetricsResult(null)
+    setUploadStatus("idle")
+    setUploadError(null)
     const stream = await start()
     if (videoPreviewRef.current) {
       faceMetrics.start(videoPreviewRef.current)
@@ -71,14 +98,18 @@ export function RecordPage() {
       <div className="flex gap-2">
         <Button
           onClick={handleStart}
-          disabled={status === "recording" || status === "requesting"}
+          disabled={
+            status === "recording" ||
+            status === "requesting" ||
+            uploadStatus === "uploading"
+          }
         >
           녹화 시작
         </Button>
         <Button
           variant="outline"
           onClick={handleStop}
-          disabled={status !== "recording"}
+          disabled={status !== "recording" || uploadStatus === "uploading"}
         >
           녹화 종료
         </Button>
@@ -92,6 +123,25 @@ export function RecordPage() {
       )}
       {fillerWordCounter.error && (
         <p className="text-sm text-destructive">{fillerWordCounter.error}</p>
+      )}
+
+      {uploadStatus === "uploading" && (
+        <p className="text-sm text-muted-foreground">업로드 중...</p>
+      )}
+      {uploadStatus === "error" && (
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-destructive">{uploadError}</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (videoBlob && facialMetrics && voiceMetricsResult) {
+                runUpload(videoBlob, facialMetrics, voiceMetricsResult)
+              }
+            }}
+          >
+            다시 시도
+          </Button>
+        </div>
       )}
 
       {playbackUrl && (
