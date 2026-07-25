@@ -1,4 +1,6 @@
 import { useParams } from "react-router-dom"
+import { ErrorState } from "@/components/ErrorState"
+import { LoadingState } from "@/components/LoadingState"
 import { getAnswer } from "@/lib/api"
 import { usePolling } from "@/hooks/usePolling"
 import type { AnswerRecord } from "@/types"
@@ -18,18 +20,14 @@ export function ResultPage() {
     <div className="flex flex-col gap-4">
       <h1>결과 / 피드백</h1>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <ErrorState message={error} />}
 
       {!error && (!answer || answer.status === "PENDING") && (
-        <p className="text-sm text-muted-foreground">
-          답변을 분석하는 중입니다...
-        </p>
+        <LoadingState message="답변을 분석하는 중입니다..." />
       )}
 
       {answer?.status === "FAILED" && (
-        <p className="text-sm text-destructive">
-          분석에 실패했습니다. 다시 시도해주세요.
-        </p>
+        <ErrorState message="분석에 실패했습니다. 다시 시도해주세요." />
       )}
 
       {answer?.status === "DONE" && (
