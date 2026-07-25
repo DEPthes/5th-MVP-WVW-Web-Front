@@ -13,7 +13,11 @@
 - `src/lib/polling.ts` + `src/hooks/usePolling.ts` — 처리상태 폴링 유틸, `ResultPage`에 연결
 - 녹화 → 업로드 → 결과 플로우 연결: `RecordPage`가 `/record/:questionId`로 questionId를 받고, 녹화 종료 후 영상+지표가 모두 준비되면 `uploadAnswer` 자동 호출 → 성공 시 `/result/:answerId`로 이동, 실패 시 에러 메시지+재시도 버튼
 - 인증 흐름 3종: `src/components/ProtectedRoute.tsx`(비로그인 시 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관), `App.tsx` 네비게이션에 로그인 상태별 로그아웃/로그인 버튼 토글, `apiFetch`가 401 응답 시 토큰 삭제 + `/login` 리다이렉트
-- Vitest 테스트 34개 (api/facialMetrics/voiceMetrics/fillerWords/polling 순수 로직)
+- `QuestionListPage`(`/questions/:materialId`) — `generateQuestions()` 연동, 질문별 "답변 시작" → `/record/:questionId`
+- `MaterialInputPage` — `src/lib/materialValidation.ts` 입력 검증 + `createMaterial()` 연동, 성공 시 `/questions/:materialId` 이동
+- `HistoryPage` — `recharts`로 호감도/긴장도 추이 그래프 골격(목업 데이터, `listSessions()` 연동 전 임시)
+- `<LoadingState/>`/`<ErrorState retry=.../>` 공용 컴포넌트로 로딩·에러 UI 통일
+- Vitest 테스트 36개 (api/facialMetrics/voiceMetrics/fillerWords/polling/materialValidation 순수 로직)
 - 라이브러리 사용 현황 및 백엔드 전송 데이터 형태: `docs/LIBRARIES_AND_API.md` 참고
 
 ## 남은 작업
@@ -32,24 +36,26 @@
 - [ ] **[지금 가능]** 입력 검증(필수값 등)은 필드명이 크게 안 바뀔 값들이라 먼저 짜둬도 무방
 - [ ] **[디자인 대기]** 최종 레이아웃
 
+### 2-2. 준비자료 입력 검증
+- [x] 입력 검증(필수값) — `src/lib/materialValidation.ts` + 폼 연동, `createMaterial()` 호출까지 연결
+
 ### 3. 질문 리스트 (`QuestionListPage`)
-- [ ] **[API 대기]** `generateQuestions()` 결과 렌더링 — 응답 형태가 명세 확정 전엔 바뀔 수 있음
-- [ ] **[지금 가능]** 생성 대기 중 로딩 상태, 질문별 "답변 시작" → `/record/:questionId` 이동 로직(이미 라우트는 연결돼 있음)
+- [x] `generateQuestions()` 호출 + 결과 렌더링, 생성 대기 중 로딩 상태, 질문별 "답변 시작" → `/record/:questionId` 이동 — 라우트를 `/questions/:materialId`로 변경(질문 생성에 materialId 필요)
 - [ ] **[디자인 대기]** 최종 레이아웃
 
 ### 4. 히스토리 (`HistoryPage`)
 - [ ] **[API 대기]** `listSessions()` / `getSession()` 연동
-- [ ] **[지금 가능]** `recharts` 설치 + `PracticeSession`/`AnswerRecord` 타입에 맞춘 목업 데이터로 그래프 골격 미리 구현(응답 형태는 `src/types.ts`와 거의 같을 가능성 높음)
+- [x] `recharts` 설치 + `PracticeSession`/`AnswerRecord` 타입에 맞춘 목업 데이터로 호감도/긴장도 추이 그래프 골격 구현 — API 연동 시 목업 데이터만 교체
 - [ ] **[디자인 대기]** 최종 레이아웃
 
 ### 5. 디자인 반영
 - [ ] **[디자인 대기]** 7개 화면 전부 현재 자리표시자 수준 — 시안 나오는 대로 Tailwind/shadcn으로 실제 레이아웃 적용
-- [ ] **[지금 가능]** 로딩/에러/빈 상태를 화면마다 따로 만들지 않고 공용 컴포넌트(`<LoadingState/>`, `<ErrorState retry=.../>` 등)로 통일 — 지금 자리표시자 스타일로 만들어두면 디자인 나왔을 때 그 컴포넌트만 재스타일링하면 됨
+- [x] 로딩/에러 상태를 `<LoadingState/>`, `<ErrorState retry=.../>` 공용 컴포넌트로 통일(RecordPage/ResultPage/QuestionListPage/MaterialInputPage 적용) — 디자인 나오면 이 두 컴포넌트만 재스타일링하면 됨
 
 ### 6. 기타
 - [ ] **[API 대기]** `.env` 실제 배포용 `VITE_API_BASE_URL` 설정 (현재 `.env.example`만 존재, 실제 서버 주소 필요)
-- [ ] **[지금 가능]** 반응형 대응 범위 논의 (모바일 지원 여부) — 제품 결정 사항, 기술 블로커 없음
-- [ ] **[지금 가능]** 필러워드 카운트는 `SpeechRecognition`/`webkitSpeechRecognition`(Chrome/Edge 계열만 안정 지원, Firefox 미지원) 기반 — 미지원 브라우저 사용자에게 안내 문구를 더 눈에 띄게 할지 논의/개선
+- [x] 반응형 대응 범위 결정 — 데스크톱 우선 지원, 모바일 대응은 보류
+- [x] 필러워드 미지원 브라우저 안내 문구 — 현재 `ErrorState`로 표시되는 수준으로 충분하다고 판단, 추가 작업 없음
 - [ ] 실측 데이터 필요 — `src/lib/facialMetrics.ts`/`src/lib/voiceMetrics.ts`의 임계치(`ponytail:` 주석 표시) 튜닝. API/디자인과 무관하지만 실사용 데이터가 있어야 해서 지금은 손댈 수 없음
 
 ## 참고
