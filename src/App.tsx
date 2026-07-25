@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { to: '/signup', label: '회원가입' },
   { to: '/materials/new', label: '자료입력' },
   { to: '/questions', label: '질문리스트' },
-  { to: '/record', label: '녹화' },
+  { to: '/record/demo-question-id', label: '녹화' },
   { to: '/result/demo-answer-id', label: '결과' },
   { to: '/history', label: '히스토리' },
 ]
@@ -32,7 +32,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/materials/new" element={<MaterialInputPage />} />
         <Route path="/questions" element={<QuestionListPage />} />
-        <Route path="/record" element={<RecordPage />} />
+        <Route path="/record/:questionId" element={<RecordPage />} />
         <Route path="/result/:answerId" element={<ResultPage />} />
         <Route path="/history" element={<HistoryPage />} />
       </Routes>
