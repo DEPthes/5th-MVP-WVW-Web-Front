@@ -12,7 +12,8 @@
 - `RecordPage`/`ResultPage`에 위 얼굴·목소리 지표 전부 표시. 언마운트 시 카메라/마이크/AudioContext/SpeechRecognition 정리, 미리보기 좌우 미러링(CSS만, 실제 녹화본은 원본 유지)
 - `src/lib/polling.ts` + `src/hooks/usePolling.ts` — 처리상태 폴링 유틸, `ResultPage`에 연결
 - 녹화 → 업로드 → 결과 플로우 연결: `RecordPage`가 `/record/:questionId`로 questionId를 받고, 녹화 종료 후 영상+지표가 모두 준비되면 `uploadAnswer` 자동 호출 → 성공 시 `/result/:answerId`로 이동, 실패 시 에러 메시지+재시도 버튼
-- Vitest 테스트 33개 (api/facialMetrics/voiceMetrics/fillerWords/polling 순수 로직)
+- 인증 흐름 3종: `src/components/ProtectedRoute.tsx`(비로그인 시 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관), `App.tsx` 네비게이션에 로그인 상태별 로그아웃/로그인 버튼 토글, `apiFetch`가 401 응답 시 토큰 삭제 + `/login` 리다이렉트
+- Vitest 테스트 34개 (api/facialMetrics/voiceMetrics/fillerWords/polling 순수 로직)
 - 라이브러리 사용 현황 및 백엔드 전송 데이터 형태: `docs/LIBRARIES_AND_API.md` 참고
 
 ## 남은 작업
@@ -20,10 +21,10 @@
 각 항목에 블로커 표시: **[지금 가능]** API 명세/디자인 시안 없이 바로 착수 가능 · **[API 대기]** 백엔드 명세 확정 필요(현재 `src/types.ts` 추정 형태로 임시 구현만 가능) · **[디자인 대기]** 시안 나와야 최종 레이아웃/스타일 확정.
 
 ### 1. 인증 흐름
-- [ ] **[지금 가능]** 보호된 라우트 처리 (비로그인 시 `/login`으로 리다이렉트) — 토큰 존재 여부만으로 판단하는 순수 프론트 로직
-- [ ] **[지금 가능]** 로그아웃 동작 (토큰 삭제 + `/login` 이동)
-- [ ] **[지금 가능]** 401 응답 시 재로그인 유도 처리 — `apiFetch`에 공통 인터셉터 추가(HTTP 상태 코드 기반이라 명세와 무관)
-- [ ] **[API 대기]** `LoginPage` / `SignupPage` 폼 → `login()`/`signup()` 호출 → 토큰 저장 → 리다이렉트 — 로직/상태관리는 지금 짤 수 있지만 요청·응답 필드가 명세 확정 전엔 바뀔 수 있음(현재 email/password/token 가정)
+- [x] 보호된 라우트 처리 — `ProtectedRoute`가 토큰 없으면 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관(로그인 폼이 나중에 이 값을 읽어 복귀시키면 됨)
+- [x] 로그아웃 동작 (토큰 삭제 + `/login` 이동, `App.tsx` 네비게이션)
+- [x] 401 응답 시 재로그인 유도 처리 — `apiFetch`가 토큰 삭제 + `/login` 리다이렉트
+- [ ] **[API 대기]** `LoginPage` / `SignupPage` 폼 → `login()`/`signup()` 호출 → 토큰 저장 → `location.state.from` 있으면 그 경로로, 없으면 기본 경로로 리다이렉트 — 로직/상태관리는 지금 짤 수 있지만 요청·응답 필드가 명세 확정 전엔 바뀔 수 있음(현재 email/password/token 가정)
 - [ ] **[디자인 대기]** 두 폼의 최종 레이아웃/스타일
 
 ### 2. 준비자료 입력 (`MaterialInputPage`)
