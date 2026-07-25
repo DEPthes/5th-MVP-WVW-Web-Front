@@ -11,7 +11,7 @@ import { clearToken, getToken } from '@/lib/api'
 
 const NAV_LINKS = [
   { to: '/materials/new', label: '자료입력' },
-  { to: '/questions', label: '질문리스트' },
+  { to: '/questions/demo-material-id', label: '질문리스트' },
   { to: '/record/demo-question-id', label: '녹화' },
   { to: '/result/demo-answer-id', label: '결과' },
   { to: '/history', label: '히스토리' },
@@ -57,7 +57,7 @@ function App() {
           }
         />
         <Route
-          path="/questions"
+          path="/questions/:materialId"
           element={
             <ProtectedRoute>
               <QuestionListPage />
