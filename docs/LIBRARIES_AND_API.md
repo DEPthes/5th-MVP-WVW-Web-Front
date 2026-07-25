@@ -44,7 +44,7 @@ MediaPipe 이후 추가된 얼굴/음성 지표는 라이브러리를 새로 설
 
 ## 2. 프론트엔드 → 백엔드 전송 데이터 형태
 
-프론트는 `src/lib/api.ts`의 `apiFetch` 래퍼(토큰 첨부, FormData/JSON 자동 분기, 에러 시 `API error {status}: {body}` throw)로 아래 엔드포인트를 호출한다. **`uploadAnswer`는 함수만 정의되어 있고 어느 화면에서도 아직 호출되지 않는다** — `RecordPage`는 계산한 지표를 화면에 표시만 하고 서버로 보내지 않는 상태다(`docs/TODO.md` 4번 항목).
+프론트는 `src/lib/api.ts`의 `apiFetch` 래퍼(토큰 첨부, FormData/JSON 자동 분기, 에러 시 `API error {status}: {body}` throw)로 아래 엔드포인트를 호출한다. `uploadAnswer`는 `RecordPage`가 녹화 종료 후 영상+지표가 모두 준비되면 자동 호출하며, 성공 시 `/result/:answerId`로 이동하고 실패 시 재시도 버튼을 보여준다.
 
 ### `POST /api/auth/signup`, `POST /api/auth/login`
 ```json
@@ -60,7 +60,7 @@ MediaPipe 이후 추가된 얼굴/음성 지표는 라이브러리를 새로 설
 ### `POST /api/materials/:id/questions`
 바디 없음. 응답: `QuestionSet { id, materialId, questions: [{ id, text }] }`
 
-### `POST /api/answers` — 답변 업로드 (구현되어 있으나 미호출)
+### `POST /api/answers` — 답변 업로드 (`RecordPage`가 녹화 종료 시 자동 호출)
 `multipart/form-data`:
 
 | 필드 | 타입 | 내용 |
