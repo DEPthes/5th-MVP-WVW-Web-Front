@@ -8,6 +8,7 @@ import { InterviewStartPage } from '@/pages/InterviewStartPage'
 import { RecordPage } from '@/pages/RecordPage'
 import { ResultPage } from '@/pages/ResultPage'
 import { HistoryPage } from '@/pages/HistoryPage'
+import { SettingsPage } from '@/pages/SettingsPage'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Footer } from '@/components/Footer'
 import { clearToken, getToken } from '@/lib/api'
@@ -19,6 +20,7 @@ const NAV_LINKS = [
   { to: '/record/demo-question-id/start', label: '녹화' },
   { to: '/result/demo-answer-id', label: '결과' },
   { to: '/history', label: '히스토리' },
+  { to: '/settings', label: '설정' },
 ]
 
 function App() {
@@ -105,6 +107,14 @@ function App() {
           element={
             <ProtectedRoute>
               <HistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

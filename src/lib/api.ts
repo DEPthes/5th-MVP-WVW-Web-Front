@@ -4,6 +4,7 @@ import type {
   InterviewSetup,
   PracticeSession,
   QuestionSet,
+  UserProfile,
 } from "@/types"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080"
@@ -136,4 +137,32 @@ export function listSessions() {
 
 export function getSession(id: string) {
   return apiFetch<PracticeSession>(`/api/sessions/${id}`)
+}
+
+export function getUserProfile() {
+  return apiFetch<UserProfile>("/api/users/me")
+}
+
+export function updateUserProfile(input: {
+  nickname: string
+  interestedJobRole: string
+}) {
+  return apiFetch<UserProfile>("/api/users/me", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+}
+
+export function changePassword(input: {
+  currentPassword: string
+  newPassword: string
+}) {
+  return apiFetch<void>("/api/users/me/password", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+}
+
+export function withdrawAccount() {
+  return apiFetch<void>("/api/users/me", { method: "DELETE" })
 }

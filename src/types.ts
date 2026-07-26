@@ -1,5 +1,11 @@
 export type ProcessingStatus = "PENDING" | "DONE" | "FAILED"
 
+export interface UserProfile {
+  userId: string
+  nickname: string
+  interestedJobRole: string
+}
+
 export interface ApplicantProfile {
   id: string
   companyName: string

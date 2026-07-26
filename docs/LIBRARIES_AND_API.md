@@ -9,7 +9,7 @@
 | 라이브러리 | 버전 | 이 프로젝트에서의 용도 |
 |---|---|---|
 | `react` / `react-dom` | ^19.2.7 | UI 렌더링. 전부 함수형 컴포넌트 + hooks (`useState`/`useEffect`/`useCallback`/`useRef`) |
-| `react-router-dom` | ^7.18.1 | 라우팅. `App.tsx`에서 `/login`, `/signup`, `/`(홈), `/interviews/new`, `/questions/:interviewId`, `/record/:questionId/start`, `/record/:questionId`, `/result/:answerId`, `/history` 정의 |
+| `react-router-dom` | ^7.18.1 | 라우팅. `App.tsx`에서 `/login`, `/signup`, `/`(홈), `/interviews/new`, `/questions/:interviewId`, `/record/:questionId/start`, `/record/:questionId`, `/result/:answerId`, `/history`, `/settings` 정의 |
 | `tailwindcss` + `@tailwindcss/vite` | ^4.3.2 | 유틸리티 CSS, Vite 플러그인으로 빌드에 통합(별도 PostCSS 설정 없음) |
 | `shadcn` | ^4.13.0 | UI 컴포넌트 CLI. `src/components/ui/button.tsx` 등 프로젝트에 복사되어 들어온 컴포넌트의 출처(런타임엔 사용 안 함, 컴포넌트 생성/업데이트 시에만 CLI로 호출) |
 | `@base-ui/react` | ^1.6.0 | shadcn 컴포넌트가 내부적으로 쓰는 헤드리스 UI 프리미티브(접근성 처리된 버튼/포커스 등) |
@@ -105,3 +105,21 @@
 
 ### `GET /api/sessions`, `GET /api/sessions/:id`
 응답: `PracticeSession { id, interviewId, createdAt, answers: AnswerRecord[] }`
+
+### `GET /api/users/me` — `SettingsPage` 진입 시 호출(현재 사용자 정보 채우기, 실패해도 빈 폼으로 진행)
+응답: `UserProfile { userId, nickname, interestedJobRole }`
+
+### `PUT /api/users/me` — 프로필 수정(닉네임/관심직무) 저장
+```json
+{ "nickname": "string", "interestedJobRole": "string" }
+```
+응답: `UserProfile`
+
+### `PUT /api/users/me/password` — 비밀번호 변경
+```json
+{ "currentPassword": "string", "newPassword": "string" }
+```
+현재 비밀번호가 일치해야 하며, 비밀번호 찾기 기능은 MVP 범위 밖(기획서 설정 화면 #9 비고).
+
+### `DELETE /api/users/me` — 회원 탈퇴(`SettingsPage` 탈퇴 확인 모달에서 호출)
+바디 없음. 성공 시 계정·프로필·STT 답변·피드백 데이터 즉시 삭제, 프론트는 토큰 삭제 후 `/login`으로 이동.

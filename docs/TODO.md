@@ -19,7 +19,8 @@
 - `QuestionListPage`(`/questions/:interviewId`) — `generateQuestions()` 연동, 질문별 "답변 시작" → `/record/:questionId`
 - `InterviewSetupPage`(`/interviews/new`, 기획서 "면접 조건 설정" 화면 기준) — 지원 프로필 선택/수정/신규등록(native `<dialog>` 모달, `createApplicantProfile`/`updateApplicantProfile` 연동), 기업/직무/경력/면접유형/면접시간(5·10·15·20분) 입력, `src/lib/interviewSetupValidation.ts` 검증 + `createInterviewSetup()` 연동, 성공 시 `/questions/:interviewId` 이동. 기존 "준비자료(자유 텍스트)" 필드는 기획서에 없는 개념이라 제거(2026-07-26)
 - `<LoadingState/>`/`<ErrorState retry=.../>` 공용 컴포넌트로 로딩·에러 UI 통일
-- Vitest 테스트 (api/polling/interviewSetupValidation/authValidation 순수 로직)
+- `SettingsPage`(`/settings`, 기획서 "설정" 화면설계서 기준) — 프로필 수정(닉네임/관심직무, `updateUserProfile()`), 계정관리(로그인 정보 읽기전용, 로그아웃, 비밀번호 변경 `changePassword()`, 탈퇴 확인 모달 `withdrawAccount()`), `src/lib/settingsValidation.ts` 검증
+- Vitest 테스트 (api/polling/interviewSetupValidation/authValidation/settingsValidation 순수 로직)
 - 라이브러리 사용 현황 및 백엔드 전송 데이터 형태: `docs/LIBRARIES_AND_API.md` 참고
 
 ## 남은 작업
@@ -58,7 +59,8 @@
 - [x] 반응형 대응 범위 결정 — 데스크톱 우선 지원, 모바일 대응은 보류
 - [x] 홈 화면 뼈대(`HomePage`, 빈 상태+CTA), 공통 푸터(`Footer`), 면접 시작 안내(`InterviewStartPage`, 마이크 권한) 구현
 - [x] 지원 프로필(기업·직무·경력 선택·수정·신규등록)/면접 유형·시간 선택 — `InterviewSetupPage`로 구현
-- [ ] **[API 대기]** 설정(프로필 수정·계정관리)/면접 목록 목록·상세 — 아직 미착수. `기획/` 폴더의 기능명세서·화면설계서 기준
+- [x] 설정(프로필 수정·계정관리: 로그아웃/비밀번호변경/탈퇴 확인 모달) — `SettingsPage`로 구현. `getUserProfile()`/`updateUserProfile()`/`changePassword()`/`withdrawAccount()`는 아직 API 대기, 실패해도 폼은 그대로 사용 가능
+- [ ] **[API 대기]** 면접 목록 목록·상세 — 아직 미착수. `기획/` 폴더의 기능명세서·화면설계서 기준
 - [ ] **[API 대기, 설계 보류]** 면접 종료 확인 모달, 하나의 세션에서 여러 질문 순차 진행 + 전체 타이머, 세션 단위 종합 피드백 데이터 모델(`PracticeSession`에 필드 없음) — 2026-07-26에 백엔드 세션/TTS/STT/Gemini API가 확정되기 전까지 설계를 보류하기로 결정(사용자 판단: 지금은 백엔드·디자인이 필요 없는 작업만 진행). API 확정되면 브레인스토밍부터 다시 시작
 
 ## 참고
