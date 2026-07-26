@@ -41,11 +41,19 @@
 
 프론트는 `src/lib/api.ts`의 `apiFetch` 래퍼(토큰 첨부, FormData/JSON 자동 분기, 에러 시 `API error {status}: {body}` throw)로 아래 엔드포인트를 호출한다. `uploadAnswer`는 `RecordPage`가 녹음 종료 후 오디오가 준비되면 자동 호출하며, 성공 시 `/result/:answerId`로 이동하고 실패 시 재시도 버튼을 보여준다.
 
-### `POST /api/auth/signup`, `POST /api/auth/login`
+### `POST /api/auth/signup`
 ```json
-{ "email": "string", "password": "string" }
+{ "userId": "string", "email": "string", "password": "string", "name": "string" }
 ```
 응답: `{ "token": "string" }`
+
+### `POST /api/auth/login`
+```json
+{ "userId": "string", "password": "string" }
+```
+응답: `{ "token": "string" }`
+
+로그인은 아이디 기반이며, 이메일은 회원가입 시에만 수집해 비밀번호 재설정 용도로 사용한다(기획서 기능명세서 #2, #3 기준).
 
 ### `POST /api/materials`
 ```json

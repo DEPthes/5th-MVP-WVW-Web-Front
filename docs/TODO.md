@@ -12,6 +12,7 @@
 - 녹음 → 업로드 → 결과 플로우 연결: `RecordPage`가 `/record/:questionId`로 questionId를 받고, 녹음 종료 후 오디오가 준비되면 `uploadAnswer` 자동 호출 → 성공 시 `/result/:answerId`로 이동, 실패 시 에러 메시지+재시도 버튼
 - `ResultPage`에 종합 피드백(`feedbackText`)과 STT 스크립트(`transcriptText`, "질문다시보기" 자리) 표시
 - 인증 흐름 3종: `src/components/ProtectedRoute.tsx`(비로그인 시 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관), `App.tsx` 네비게이션에 로그인 상태별 로그아웃/로그인 버튼 토글, `apiFetch`가 401 응답 시 토큰 삭제 + `/login` 리다이렉트
+- `LoginPage`/`SignupPage` — `src/lib/authValidation.ts` 검증(아이디/비밀번호, 아이디/이메일/비밀번호/이름/약관동의) + `login()`/`signup()` 연동, 성공 시 토큰 저장 후 리다이렉트
 - `QuestionListPage`(`/questions/:materialId`) — `generateQuestions()` 연동, 질문별 "답변 시작" → `/record/:questionId`
 - `MaterialInputPage` — `src/lib/materialValidation.ts` 입력 검증 + `createMaterial()` 연동, 성공 시 `/questions/:materialId` 이동
 - `<LoadingState/>`/`<ErrorState retry=.../>` 공용 컴포넌트로 로딩·에러 UI 통일
@@ -26,8 +27,9 @@
 - [x] 보호된 라우트 처리 — `ProtectedRoute`가 토큰 없으면 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관(로그인 폼이 나중에 이 값을 읽어 복귀시키면 됨)
 - [x] 로그아웃 동작 (토큰 삭제 + `/login` 이동, `App.tsx` 네비게이션)
 - [x] 401 응답 시 재로그인 유도 처리 — `apiFetch`가 토큰 삭제 + `/login` 리다이렉트
-- [ ] **[API 대기]** `LoginPage` / `SignupPage` 폼 → `login()`/`signup()` 호출 → 토큰 저장 → `location.state.from` 있으면 그 경로로, 없으면 기본 경로로 리다이렉트 — 로직/상태관리는 지금 짤 수 있지만 요청·응답 필드가 명세 확정 전엔 바뀔 수 있음(현재 email/password/token 가정)
-- [ ] **[디자인 대기]** 두 폼의 최종 레이아웃/스타일
+- [x] 로그인 필드를 기획서 기준(아이디+비밀번호)으로 정정 — `login(userId, password)`, 이메일은 회원가입 시에만 수집(비밀번호 재설정용)
+- [x] `LoginPage` / `SignupPage` 폼 구현 — `src/lib/authValidation.ts` 검증 + `login()`/`signup()` 연동, 토큰 저장, `location.state.from` 있으면 그 경로로 없으면 임시 기본 경로(`/materials/new`, 홈 화면 생기면 교체)로 리다이렉트
+- [ ] **[디자인 대기]** 두 폼의 최종 레이아웃/스타일 — `기획/화면설계서/` 참고
 
 ### 2. 준비자료 입력 (`MaterialInputPage`)
 - [ ] **[API 대기]** 기업명/직무/준비자료 입력 폼 → `createMaterial()` 호출 → `/questions` 이동 — 필드 구성이 명세 확정 전엔 바뀔 수 있음
