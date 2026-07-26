@@ -21,8 +21,8 @@ const INITIAL_VALUES: SignupValues = {
 const INPUT_CLASS =
   "rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
 
-// ponytail: 초기 프로필 설정 화면이 아직 없어 임시 기본 이동 경로.
-const DEFAULT_REDIRECT = "/materials/new"
+// ponytail: 기획서상 회원가입 후 "초기 프로필 설정"으로 이동해야 하나 해당 화면 미구현 — 홈으로 임시 대체.
+const DEFAULT_REDIRECT = "/"
 
 export function SignupPage() {
   const navigate = useNavigate()

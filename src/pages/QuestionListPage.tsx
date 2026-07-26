@@ -34,7 +34,7 @@ export function QuestionListPage() {
           {questionSet.questions.map((question) => (
             <li key={question.id} className="flex items-center justify-between gap-4">
               <span>{question.text}</span>
-              <Link to={`/record/${question.id}`} className="shrink-0 underline">
+              <Link to={`/record/${question.id}/start`} className="shrink-0 underline">
                 답변 시작
               </Link>
             </li>

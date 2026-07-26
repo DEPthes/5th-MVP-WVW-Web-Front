@@ -5,7 +5,10 @@
 ## 완료된 것
 
 - 프로젝트 세팅: Vite + React 19 + TypeScript + Tailwind v4 + shadcn/ui
-- 라우팅 스켈레톤: 7개 경로 (`/login`, `/signup`, `/materials/new`, `/questions`, `/record/:questionId`, `/result/:answerId`, `/history`)
+- 라우팅: `/login`, `/signup`, `/`(홈), `/materials/new`, `/questions/:materialId`, `/record/:questionId/start`(면접 시작 안내), `/record/:questionId`, `/result/:answerId`, `/history`
+- `HomePage`(`/`) — 최근 면접 목록/CTA 자리, `listSessions()` 대기 중이라 항상 빈 상태+시작 CTA
+- `InterviewStartPage`(`/record/:questionId/start`) — 답변 녹음 전 마이크 권한 확인, 거부 시 안내+재시도
+- `Footer` — 전 화면 공통 노출, 저작권/이용약관·개인정보처리방침(native `<dialog>` 모달)/문의 이메일
 - `src/lib/api.ts` — fetch 래퍼(토큰 첨부, FormData 처리, 에러 핸들링) + 백엔드 엔드포인트별 함수
 - `src/hooks/useAudioRecorder.ts` — 마이크 전용 녹음(카메라 미사용), 시작/종료 버튼 연결, 언마운트 시 트랙/레코더 정리
 - `src/lib/polling.ts` + `src/hooks/usePolling.ts` — 처리상태 폴링 유틸, `ResultPage`에 연결
@@ -28,7 +31,7 @@
 - [x] 로그아웃 동작 (토큰 삭제 + `/login` 이동, `App.tsx` 네비게이션)
 - [x] 401 응답 시 재로그인 유도 처리 — `apiFetch`가 토큰 삭제 + `/login` 리다이렉트
 - [x] 로그인 필드를 기획서 기준(아이디+비밀번호)으로 정정 — `login(userId, password)`, 이메일은 회원가입 시에만 수집(비밀번호 재설정용)
-- [x] `LoginPage` / `SignupPage` 폼 구현 — `src/lib/authValidation.ts` 검증 + `login()`/`signup()` 연동, 토큰 저장, `location.state.from` 있으면 그 경로로 없으면 임시 기본 경로(`/materials/new`, 홈 화면 생기면 교체)로 리다이렉트
+- [x] `LoginPage` / `SignupPage` 폼 구현 — `src/lib/authValidation.ts` 검증 + `login()`/`signup()` 연동, 토큰 저장, `location.state.from` 있으면 그 경로로 없으면 `/`(홈)로 리다이렉트
 - [ ] **[디자인 대기]** 두 폼의 최종 레이아웃/스타일 — `기획/화면설계서/` 참고
 
 ### 2. 준비자료 입력 (`MaterialInputPage`)
@@ -55,7 +58,10 @@
 ### 6. 기타
 - [ ] **[API 대기]** `.env` 실제 배포용 `VITE_API_BASE_URL` 설정 (현재 `.env.example`만 존재, 실제 서버 주소 필요)
 - [x] 반응형 대응 범위 결정 — 데스크톱 우선 지원, 모바일 대응은 보류
-- [ ] **[API 대기]** 기획서의 홈/설정(프로필 수정·계정관리)/지원 프로필/면접 조건 설정(유형·시간)/면접 종료 확인·종합 피드백 모달/질문다시보기 온디맨드 피드백 — 아직 미착수. `기획/` 폴더의 기능명세서·화면설계서 기준
+- [x] 홈 화면 뼈대(`HomePage`, 빈 상태+CTA), 공통 푸터(`Footer`), 면접 시작 안내(`InterviewStartPage`, 마이크 권한) 구현
+- [ ] **[API 대기]** 설정(프로필 수정·계정관리)/지원 프로필(기업·직무·경력 선택·수정·신규등록)/면접 유형·시간 선택/면접 목록 목록·상세 — 아직 미착수. `기획/` 폴더의 기능명세서·화면설계서 기준
+- [ ] **결정 필요** 면접 종료 확인 모달, 하나의 세션에서 여러 질문 순차 진행 + 전체 타이머 — 현재 질문 1개당 별도 라우트로 끊어져 있어 "면접 전체 종료"라는 개념 자체가 없음. 세션 흐름을 먼저 설계해야 함
+- [ ] **결정 필요** 피드백 데이터 모델 — 질문별 피드백(`AnswerRecord.feedbackText`, 완료)과 별개로 면접 세션 전체 단위의 종합 피드백(점수/한줄평/강점·약점) 필드가 `PracticeSession`에 없음
 
 ## 참고
 - 백엔드 계약: `src/types.ts`의 도메인 타입과 `docs/superpowers/specs/2026-07-11-interview-lab-design.md`(별도 저장소 `depth`) 기준

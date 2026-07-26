@@ -15,8 +15,7 @@ const INITIAL_VALUES: LoginValues = { userId: "", password: "" }
 const INPUT_CLASS =
   "rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
 
-// ponytail: 홈 화면이 아직 없어 임시 기본 이동 경로. 홈 완성되면 "/"로 교체.
-const DEFAULT_REDIRECT = "/materials/new"
+const DEFAULT_REDIRECT = "/"
 
 export function LoginPage() {
   const navigate = useNavigate()
