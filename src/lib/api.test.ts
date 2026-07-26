@@ -66,18 +66,7 @@ describe("apiFetch", () => {
       return new Response(JSON.stringify({ id: "a1" }), { status: 200 })
     }) as typeof fetch
 
-    await uploadAnswer(
-      "q1",
-      new Blob(["x"]),
-      {
-        eyeContactRatio: 0.8,
-        blinkRate: 14,
-        likabilityScore: 0.3,
-        tensionScore: 0.1,
-        neutralScore: 0.6,
-      },
-      { fillerWordCount: 2, quietRatio: 0.1, trembleRatio: 0.05 }
-    )
+    await uploadAnswer("q1", new Blob(["x"]))
 
     expect(capturedHeaders["Content-Type"]).toBeUndefined()
   })

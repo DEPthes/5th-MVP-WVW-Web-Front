@@ -18,29 +18,12 @@ export interface QuestionSet {
   questions: Question[]
 }
 
-export interface FacialMetrics {
-  eyeContactRatio: number
-  blinkRate: number
-  likabilityScore: number
-  tensionScore: number
-  neutralScore: number
-}
-
-export interface VoiceMetrics {
-  fillerWordCount: number
-  quietRatio: number
-  trembleRatio: number
-}
-
 export interface AnswerRecord {
   id: string
   questionId: string
-  videoUrl: string
   transcriptText: string | null
   feedbackText: string | null
   durationSeconds: number
-  facialMetrics: FacialMetrics
-  voiceMetrics: VoiceMetrics
   status: ProcessingStatus
 }
 

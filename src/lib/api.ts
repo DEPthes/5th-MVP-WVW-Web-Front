@@ -1,10 +1,8 @@
 import type {
   AnswerRecord,
-  FacialMetrics,
   PracticeSession,
   PreparationMaterial,
   QuestionSet,
-  VoiceMetrics,
 } from "@/types"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080"
@@ -85,17 +83,10 @@ export function generateQuestions(materialId: string) {
   })
 }
 
-export function uploadAnswer(
-  questionId: string,
-  video: Blob,
-  facialMetrics: FacialMetrics,
-  voiceMetrics: VoiceMetrics
-) {
+export function uploadAnswer(questionId: string, audio: Blob) {
   const formData = new FormData()
   formData.append("questionId", questionId)
-  formData.append("video", video)
-  formData.append("facialMetrics", JSON.stringify(facialMetrics))
-  formData.append("voiceMetrics", JSON.stringify(voiceMetrics))
+  formData.append("audio", audio)
   return apiFetch<AnswerRecord>("/api/answers", {
     method: "POST",
     body: formData,

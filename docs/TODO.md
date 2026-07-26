@@ -1,23 +1,21 @@
 # 모면완 프론트엔드 — 남은 작업
 
+> **2026-07-26 방향 전환**: 카메라/MediaPipe 표정 분석, 음성 신호 지표(말속도·떨림 등 정량값), 원본 영상/음성 저장 및 다시듣기를 전부 제외하기로 결정. 답변은 마이크로만 녹음하고, STT 텍스트 + Gemini 텍스트 피드백에 집중하는 구조로 변경. 기존 구현은 `archive/video-facial-pipeline` 브랜치에 보존. 근거: 기획 폴더(`기획/모면완 IA & 기능명세서 (최종)/`)의 "카메라는 MVP 제외", 원본 음성 미저장 정책.
+
 ## 완료된 것
 
 - 프로젝트 세팅: Vite + React 19 + TypeScript + Tailwind v4 + shadcn/ui
 - 라우팅 스켈레톤: 7개 경로 (`/login`, `/signup`, `/materials/new`, `/questions`, `/record/:questionId`, `/result/:answerId`, `/history`)
 - `src/lib/api.ts` — fetch 래퍼(토큰 첨부, FormData 처리, 에러 핸들링) + 백엔드 엔드포인트별 함수
-- `src/hooks/useMediaRecorderCapture.ts` — 카메라/마이크 녹화, `RecordPage`에 미리보기+시작/종료 버튼 연결, 언마운트 시 트랙/레코더 정리
-- `src/hooks/useFaceLandmarkerMetrics.ts` + `src/lib/facialMetrics.ts` — MediaPipe로 얼굴 지표 집계(순수 로직 분리, 테스트 완료): 아이컨택 비율(eyeLook AND head pose), 분당 깜빡임(blinkRate), 호감도/긴장도/무표정도(likabilityScore/tensionScore/neutralScore, 블렌드셰이프 카테고리 평균 기반 휴리스틱)
-- `src/hooks/useVoiceMetrics.ts` + `src/lib/voiceMetrics.ts` — Web Audio API로 목소리 지표 집계: 작은 목소리 구간 비율(quietRatio), 떨림 구간 비율(trembleRatio)
-- `src/hooks/useFillerWordCounter.ts` + `src/lib/fillerWords.ts` — Web Speech API로 필러워드("음"/"어"/"그"/"저기"/"니까") 카운트, 미지원 브라우저는 에러 상태로 표시
-- `RecordPage`/`ResultPage`에 위 얼굴·목소리 지표 전부 표시. 언마운트 시 카메라/마이크/AudioContext/SpeechRecognition 정리, 미리보기 좌우 미러링(CSS만, 실제 녹화본은 원본 유지)
+- `src/hooks/useAudioRecorder.ts` — 마이크 전용 녹음(카메라 미사용), 시작/종료 버튼 연결, 언마운트 시 트랙/레코더 정리
 - `src/lib/polling.ts` + `src/hooks/usePolling.ts` — 처리상태 폴링 유틸, `ResultPage`에 연결
-- 녹화 → 업로드 → 결과 플로우 연결: `RecordPage`가 `/record/:questionId`로 questionId를 받고, 녹화 종료 후 영상+지표가 모두 준비되면 `uploadAnswer` 자동 호출 → 성공 시 `/result/:answerId`로 이동, 실패 시 에러 메시지+재시도 버튼
+- 녹음 → 업로드 → 결과 플로우 연결: `RecordPage`가 `/record/:questionId`로 questionId를 받고, 녹음 종료 후 오디오가 준비되면 `uploadAnswer` 자동 호출 → 성공 시 `/result/:answerId`로 이동, 실패 시 에러 메시지+재시도 버튼
+- `ResultPage`에 종합 피드백(`feedbackText`)과 STT 스크립트(`transcriptText`, "질문다시보기" 자리) 표시
 - 인증 흐름 3종: `src/components/ProtectedRoute.tsx`(비로그인 시 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관), `App.tsx` 네비게이션에 로그인 상태별 로그아웃/로그인 버튼 토글, `apiFetch`가 401 응답 시 토큰 삭제 + `/login` 리다이렉트
 - `QuestionListPage`(`/questions/:materialId`) — `generateQuestions()` 연동, 질문별 "답변 시작" → `/record/:questionId`
 - `MaterialInputPage` — `src/lib/materialValidation.ts` 입력 검증 + `createMaterial()` 연동, 성공 시 `/questions/:materialId` 이동
-- `HistoryPage` — `recharts`로 호감도/긴장도 추이 그래프 골격(목업 데이터, `listSessions()` 연동 전 임시)
 - `<LoadingState/>`/`<ErrorState retry=.../>` 공용 컴포넌트로 로딩·에러 UI 통일
-- Vitest 테스트 36개 (api/facialMetrics/voiceMetrics/fillerWords/polling/materialValidation 순수 로직)
+- Vitest 테스트 (api/polling/materialValidation 순수 로직)
 - 라이브러리 사용 현황 및 백엔드 전송 데이터 형태: `docs/LIBRARIES_AND_API.md` 참고
 
 ## 남은 작업
@@ -45,7 +43,7 @@
 
 ### 4. 히스토리 (`HistoryPage`)
 - [ ] **[API 대기]** `listSessions()` / `getSession()` 연동
-- [x] `recharts` 설치 + `PracticeSession`/`AnswerRecord` 타입에 맞춘 목업 데이터로 호감도/긴장도 추이 그래프 골격 구현 — API 연동 시 목업 데이터만 교체
+- [ ] **[API 대기]** 기획서 "면접 목록 목록"(날짜·기업·직무·요약평가, 정렬, 삭제)으로 재구현 — 표정/음성 지표 그래프는 카메라 제외 결정으로 폐기
 - [ ] **[디자인 대기]** 최종 레이아웃
 
 ### 5. 디자인 반영
@@ -55,8 +53,7 @@
 ### 6. 기타
 - [ ] **[API 대기]** `.env` 실제 배포용 `VITE_API_BASE_URL` 설정 (현재 `.env.example`만 존재, 실제 서버 주소 필요)
 - [x] 반응형 대응 범위 결정 — 데스크톱 우선 지원, 모바일 대응은 보류
-- [x] 필러워드 미지원 브라우저 안내 문구 — 현재 `ErrorState`로 표시되는 수준으로 충분하다고 판단, 추가 작업 없음
-- [ ] 실측 데이터 필요 — `src/lib/facialMetrics.ts`/`src/lib/voiceMetrics.ts`의 임계치(`ponytail:` 주석 표시) 튜닝. API/디자인과 무관하지만 실사용 데이터가 있어야 해서 지금은 손댈 수 없음
+- [ ] **[API 대기]** 기획서의 홈/설정(프로필 수정·계정관리)/지원 프로필/면접 조건 설정(유형·시간)/면접 종료 확인·종합 피드백 모달/질문다시보기 온디맨드 피드백 — 아직 미착수. `기획/` 폴더의 기능명세서·화면설계서 기준
 
 ## 참고
 - 백엔드 계약: `src/types.ts`의 도메인 타입과 `docs/superpowers/specs/2026-07-11-interview-lab-design.md`(별도 저장소 `depth`) 기준
