@@ -5,8 +5,8 @@
 ## 완료된 것
 
 - 프로젝트 세팅: Vite + React 19 + TypeScript + Tailwind v4 + shadcn/ui
-- 라우팅: `/login`, `/signup`, `/`(홈), `/interviews/new`(면접 조건 설정), `/questions/:interviewId`, `/record/:questionId/start`(면접 시작 안내), `/record/:questionId`, `/result/:answerId`, `/history`
-- `HomePage`(`/`) — 최근 면접 목록/CTA 자리, `listSessions()` 대기 중이라 항상 빈 상태+시작 CTA
+- 라우팅: `/login`, `/signup`, `/`(홈=면접 목록), `/interviews/new`(면접 조건 설정), `/questions/:interviewId`, `/record/:questionId/start`(면접 시작 안내), `/record/:questionId`, `/result/:answerId`, `/sessions/:sessionId`(면접 상세, 자리표시자), `/settings`
+- `HomePage`(`/`, 기획서 "홈" 화면설계서 기준 — 홈 자체가 면접 목록 화면) — 전체/완료 건수, 카드 목록(피드백/삭제), 삭제 확인 모달(native `<dialog>`), `listSessions()`/`deleteSession()` 연동. 목록 없으면 빈 상태+CTA. 별도 "히스토리" 메뉴는 기획서 IA에 없어서 제거(2026-07-26)
 - `InterviewStartPage`(`/record/:questionId/start`) — 답변 녹음 전 마이크 권한 확인, 거부 시 안내+재시도
 - `Footer` — 전 화면 공통 노출, 저작권/이용약관·개인정보처리방침(native `<dialog>` 모달)/문의 이메일
 - `src/lib/api.ts` — fetch 래퍼(토큰 첨부, FormData 처리, 에러 핸들링) + 백엔드 엔드포인트별 함수
@@ -45,9 +45,9 @@
 - [x] `generateQuestions()` 호출 + 결과 렌더링, 생성 대기 중 로딩 상태, 질문별 "답변 시작" → `/record/:questionId/start` 이동 — 라우트를 `/questions/:interviewId`로 변경(질문 생성에 interviewId 필요)
 - [ ] **[디자인 대기]** 최종 레이아웃
 
-### 4. 히스토리 (`HistoryPage`)
-- [ ] **[API 대기]** `listSessions()` / `getSession()` 연동
-- [ ] **[API 대기]** 기획서 "면접 목록 목록"(날짜·기업·직무·요약평가, 정렬, 삭제)으로 재구현 — 표정/음성 지표 그래프는 카메라 제외 결정으로 폐기
+### 4. 면접 목록 (`HomePage`)
+- [x] 카드 목록(전체/완료 건수, 날짜, 상태, 피드백/삭제 버튼), 삭제 확인 모달 — 기획서 화면설계서(홈.png) 기준
+- [ ] **[API 대기]** `listSessions()`/`deleteSession()` 연동 — 지금은 API 대기 중이라 항상 빈 상태로 표시
 - [ ] **[디자인 대기]** 최종 레이아웃
 
 ### 5. 디자인 반영
@@ -60,8 +60,8 @@
 - [x] 홈 화면 뼈대(`HomePage`, 빈 상태+CTA), 공통 푸터(`Footer`), 면접 시작 안내(`InterviewStartPage`, 마이크 권한) 구현
 - [x] 지원 프로필(기업·직무·경력 선택·수정·신규등록)/면접 유형·시간 선택 — `InterviewSetupPage`로 구현
 - [x] 설정(프로필 수정·계정관리: 로그아웃/비밀번호변경/탈퇴 확인 모달) — `SettingsPage`로 구현. `getUserProfile()`/`updateUserProfile()`/`changePassword()`/`withdrawAccount()`는 아직 API 대기, 실패해도 폼은 그대로 사용 가능
-- [ ] **[API 대기]** 면접 목록 목록·상세 — 아직 미착수. `기획/` 폴더의 기능명세서·화면설계서 기준
-- [ ] **[API 대기, 설계 보류]** 면접 종료 확인 모달, 하나의 세션에서 여러 질문 순차 진행 + 전체 타이머, 세션 단위 종합 피드백 데이터 모델(`PracticeSession`에 필드 없음) — 2026-07-26에 백엔드 세션/TTS/STT/Gemini API가 확정되기 전까지 설계를 보류하기로 결정(사용자 판단: 지금은 백엔드·디자인이 필요 없는 작업만 진행). API 확정되면 브레인스토밍부터 다시 시작
+- [x] `SessionDetailPage`(`/sessions/:sessionId`) — 자리표시자만 존재. 실제 내용(홈2/홈3.png: 피드백 탭 — 종합점수/사고력·실행력·협업력·성장력 breakdown, 질문다시보기 탭)은 아래 세션 단위 종합 피드백 데이터 모델 결정 이후 구현
+- [ ] **[API 대기, 설계 보류]** 면접 종료 확인 모달, 하나의 세션에서 여러 질문 순차 진행 + 전체 타이머, 세션 단위 종합 피드백 데이터 모델(종합점수·사고력·실행력·협업력·성장력, `PracticeSession`에 필드 없음) — 2026-07-26에 백엔드 세션/TTS/STT/Gemini API가 확정되기 전까지 설계를 보류하기로 결정(사용자 판단: 지금은 백엔드·디자인이 필요 없는 작업만 진행). API 확정되면 브레인스토밍부터 다시 시작
 
 ## 참고
 - 백엔드 계약: `src/types.ts`의 도메인 타입과 `docs/superpowers/specs/2026-07-11-interview-lab-design.md`(별도 저장소 `depth`) 기준

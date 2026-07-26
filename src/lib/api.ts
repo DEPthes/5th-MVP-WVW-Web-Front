@@ -3,6 +3,7 @@ import type {
   ApplicantProfile,
   InterviewSetup,
   PracticeSession,
+  PracticeSessionSummary,
   QuestionSet,
   UserProfile,
 } from "@/types"
@@ -132,11 +133,15 @@ export function getAnswer(id: string) {
 }
 
 export function listSessions() {
-  return apiFetch<PracticeSession[]>("/api/sessions")
+  return apiFetch<PracticeSessionSummary[]>("/api/sessions")
 }
 
 export function getSession(id: string) {
   return apiFetch<PracticeSession>(`/api/sessions/${id}`)
+}
+
+export function deleteSession(id: string) {
+  return apiFetch<void>(`/api/sessions/${id}`, { method: "DELETE" })
 }
 
 export function getUserProfile() {

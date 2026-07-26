@@ -9,7 +9,7 @@
 | 라이브러리 | 버전 | 이 프로젝트에서의 용도 |
 |---|---|---|
 | `react` / `react-dom` | ^19.2.7 | UI 렌더링. 전부 함수형 컴포넌트 + hooks (`useState`/`useEffect`/`useCallback`/`useRef`) |
-| `react-router-dom` | ^7.18.1 | 라우팅. `App.tsx`에서 `/login`, `/signup`, `/`(홈), `/interviews/new`, `/questions/:interviewId`, `/record/:questionId/start`, `/record/:questionId`, `/result/:answerId`, `/history`, `/settings` 정의 |
+| `react-router-dom` | ^7.18.1 | 라우팅. `App.tsx`에서 `/login`, `/signup`, `/`(홈=면접 목록), `/interviews/new`, `/questions/:interviewId`, `/record/:questionId/start`, `/record/:questionId`, `/result/:answerId`, `/sessions/:sessionId`, `/settings` 정의 |
 | `tailwindcss` + `@tailwindcss/vite` | ^4.3.2 | 유틸리티 CSS, Vite 플러그인으로 빌드에 통합(별도 PostCSS 설정 없음) |
 | `shadcn` | ^4.13.0 | UI 컴포넌트 CLI. `src/components/ui/button.tsx` 등 프로젝트에 복사되어 들어온 컴포넌트의 출처(런타임엔 사용 안 함, 컴포넌트 생성/업데이트 시에만 CLI로 호출) |
 | `@base-ui/react` | ^1.6.0 | shadcn 컴포넌트가 내부적으로 쓰는 헤드리스 UI 프리미티브(접근성 처리된 버튼/포커스 등) |
@@ -103,8 +103,14 @@
 ```
 원본 오디오는 서버가 STT 변환 완료 후 즉시 삭제하는 것을 전제로 한다 — 다시듣기 기능 없음(기획서 정책).
 
-### `GET /api/sessions`, `GET /api/sessions/:id`
+### `GET /api/sessions` — 면접 목록(`HomePage`가 홈 화면으로 사용). 실패해도 빈 목록으로 진행
+응답: `PracticeSessionSummary[] { id, companyName, jobRole, careerYears, createdAt, status: "COMPLETED" | "ERROR" }`
+
+### `GET /api/sessions/:id` — 면접 상세(`SessionDetailPage`, 현재 자리표시자만 존재)
 응답: `PracticeSession { id, interviewId, createdAt, answers: AnswerRecord[] }`
+
+### `DELETE /api/sessions/:id` — 면접 목록 카드의 삭제 확인 모달에서 호출
+바디 없음. 성공 시 목록에서 제거, STT 답변·피드백 데이터 함께 삭제.
 
 ### `GET /api/users/me` — `SettingsPage` 진입 시 호출(현재 사용자 정보 채우기, 실패해도 빈 폼으로 진행)
 응답: `UserProfile { userId, nickname, interestedJobRole }`

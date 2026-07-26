@@ -48,3 +48,14 @@ export interface PracticeSession {
   createdAt: string
   answers: AnswerRecord[]
 }
+
+export type SessionStatus = "COMPLETED" | "ERROR"
+
+export interface PracticeSessionSummary {
+  id: string
+  companyName: string
+  jobRole: string
+  careerYears: string
+  createdAt: string
+  status: SessionStatus
+}

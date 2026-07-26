@@ -7,7 +7,7 @@ import { QuestionListPage } from '@/pages/QuestionListPage'
 import { InterviewStartPage } from '@/pages/InterviewStartPage'
 import { RecordPage } from '@/pages/RecordPage'
 import { ResultPage } from '@/pages/ResultPage'
-import { HistoryPage } from '@/pages/HistoryPage'
+import { SessionDetailPage } from '@/pages/SessionDetailPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Footer } from '@/components/Footer'
@@ -19,7 +19,6 @@ const NAV_LINKS = [
   { to: '/questions/demo-interview-id', label: '질문리스트' },
   { to: '/record/demo-question-id/start', label: '녹화' },
   { to: '/result/demo-answer-id', label: '결과' },
-  { to: '/history', label: '히스토리' },
   { to: '/settings', label: '설정' },
 ]
 
@@ -103,10 +102,10 @@ function App() {
           }
         />
         <Route
-          path="/history"
+          path="/sessions/:sessionId"
           element={
             <ProtectedRoute>
-              <HistoryPage />
+              <SessionDetailPage />
             </ProtectedRoute>
           }
         />
