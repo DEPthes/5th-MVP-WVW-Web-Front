@@ -115,10 +115,6 @@ export function createInterviewSetup(input: {
   })
 }
 
-export function getInterviewSetup(id: string) {
-  return apiFetch<InterviewSetup>(`/api/interviews/${id}`)
-}
-
 export function generateQuestions(interviewId: string) {
   return apiFetch<QuestionSet>(`/api/interviews/${interviewId}/questions`, {
     method: "POST",
