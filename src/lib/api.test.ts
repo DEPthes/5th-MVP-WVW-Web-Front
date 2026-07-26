@@ -1,20 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const store: Record<string, string> = {}
-;(globalThis as unknown as { localStorage: Storage }).localStorage = {
-  getItem: (k: string) => store[k] ?? null,
-  setItem: (k: string, v: string) => {
-    store[k] = v
-  },
-  removeItem: (k: string) => {
-    delete store[k]
-  },
-  clear: () => {
-    for (const k of Object.keys(store)) delete store[k]
-  },
-  key: () => null,
-  length: 0,
+function makeStorage(store: Record<string, string>): Storage {
+  return {
+    getItem: (k: string) => store[k] ?? null,
+    setItem: (k: string, v: string) => {
+      store[k] = v
+    },
+    removeItem: (k: string) => {
+      delete store[k]
+    },
+    clear: () => {
+      for (const k of Object.keys(store)) delete store[k]
+    },
+    key: () => null,
+    length: 0,
+  }
 }
+
+;(globalThis as unknown as { localStorage: Storage }).localStorage = makeStorage({})
+;(globalThis as unknown as { sessionStorage: Storage }).sessionStorage = makeStorage({})
 
 ;(globalThis as unknown as { window: { location: { href: string } } }).window = {
   location: { href: "" },

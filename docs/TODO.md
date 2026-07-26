@@ -15,7 +15,7 @@
 - 녹음 → 업로드 → 결과 플로우 연결: `RecordPage`가 `/record/:questionId`로 questionId를 받고, 녹음 종료 후 오디오가 준비되면 `uploadAnswer` 자동 호출 → 성공 시 `/result/:answerId`로 이동, 실패 시 에러 메시지+재시도 버튼
 - `ResultPage`에 종합 피드백(`feedbackText`)과 STT 스크립트(`transcriptText`, "질문다시보기" 자리) 표시
 - 인증 흐름 3종: `src/components/ProtectedRoute.tsx`(비로그인 시 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관), `App.tsx` 네비게이션에 로그인 상태별 로그아웃/로그인 버튼 토글, `apiFetch`가 401 응답 시 토큰 삭제 + `/login` 리다이렉트
-- `LoginPage`/`SignupPage` — `src/lib/authValidation.ts` 검증(아이디/비밀번호, 아이디/이메일/비밀번호/이름/약관동의) + `login()`/`signup()` 연동, 성공 시 토큰 저장 후 리다이렉트
+- `LoginPage`/`SignupPage` — 화면설계서 Slide 27/28 기준으로 재확인: 로그인에 "자동 로그인" 체크박스(토큰을 `localStorage`/`sessionStorage` 중 어디에 저장할지만 결정) + 슬로건 문구, 회원가입에 비밀번호 확인 필드 + 아이디/비밀번호 형식 검증(영문+숫자 8-12자 / 영문+숫자+특수기호 8자 이상) + "개인정보 수집 및 이용 동의" 체크박스와 별도 안내 모달로 정정. `src/lib/authValidation.ts` 검증 + `login()`/`signup()` 연동, 성공 시 토큰 저장 후 리다이렉트
 - `QuestionListPage`(`/questions/:interviewId`) — `generateQuestions()` 연동, 질문별 "답변 시작" → `/record/:questionId`
 - `InterviewSetupPage`(`/interviews/new`, 기획서 "면접 조건 설정" 화면 기준) — 지원 프로필 선택/수정/신규등록(native `<dialog>` 모달, `createApplicantProfile`/`updateApplicantProfile` 연동), 기업/직무/경력/면접유형/면접시간(5·10·15·20분) 입력, `src/lib/interviewSetupValidation.ts` 검증 + `createInterviewSetup()` 연동, 성공 시 `/questions/:interviewId` 이동. 기존 "준비자료(자유 텍스트)" 필드는 기획서에 없는 개념이라 제거(2026-07-26)
 - `<LoadingState/>`/`<ErrorState retry=.../>` 공용 컴포넌트로 로딩·에러 UI 통일
@@ -33,10 +33,12 @@
 - [x] 401 응답 시 재로그인 유도 처리 — `apiFetch`가 토큰 삭제 + `/login` 리다이렉트
 - [x] 로그인 필드를 기획서 기준(아이디+비밀번호)으로 정정 — `login(userId, password)`, 이메일은 회원가입 시에만 수집(비밀번호 재설정용)
 - [x] `LoginPage` / `SignupPage` 폼 구현 — `src/lib/authValidation.ts` 검증 + `login()`/`signup()` 연동, 토큰 저장, `location.state.from` 있으면 그 경로로 없으면 `/`(홈)로 리다이렉트
+- [x] 화면설계서 Slide 27/28 기준 정정 — 회원가입 비밀번호 확인 필드·아이디/비밀번호 형식 검증·개인정보 동의 UX, 로그인 자동 로그인 체크박스·슬로건
 - [ ] **[디자인 대기]** 두 폼의 최종 레이아웃/스타일 — `기획/화면설계서/` 참고
 
 ### 2. 면접 조건 설정 (`InterviewSetupPage`)
 - [x] 지원 프로필(기업/직무/경력) 선택·수정·신규등록 모달, 면접 유형/시간 선택, `src/lib/interviewSetupValidation.ts` 검증 + `createInterviewSetup()`/`createApplicantProfile()`/`updateApplicantProfile()` 연동 — 기획서 화면설계서 Slide 9/10 기준
+- [x] 경력 옵션을 화면설계서 Slide 13("새 프로필 등록" 모달) 기준으로 정정 — 관련 경력/유사 경력/무경력/정규직 경력/계약직·프리랜서 경력/인턴 및 현장실습
 - [ ] **[API 대기]** `listApplicantProfiles()` 연동 — 지금은 이번 세션 동안 등록/수정한 프로필만 select에 표시(새로고침 시 초기화)
 - [ ] **[API 대기]** 실제 필드명/응답 형태는 백엔드 확정 전엔 바뀔 수 있음
 - [ ] **[디자인 대기]** 최종 레이아웃 — 화면설계서 Slide 9/10과 비교해 세부 스타일 맞추기
@@ -62,6 +64,7 @@
 - [x] 설정(프로필 수정·계정관리: 로그아웃/비밀번호변경/탈퇴 확인 모달) — `SettingsPage`로 구현. `getUserProfile()`/`updateUserProfile()`/`changePassword()`/`withdrawAccount()`는 아직 API 대기, 실패해도 폼은 그대로 사용 가능
 - [x] `SessionDetailPage`(`/sessions/:sessionId`) — 자리표시자만 존재. 실제 내용(홈2/홈3.png: 피드백 탭 — 종합점수/사고력·실행력·협업력·성장력 breakdown, 질문다시보기 탭)은 아래 세션 단위 종합 피드백 데이터 모델 결정 이후 구현
 - [ ] **[API 대기, 설계 보류]** 면접 종료 확인 모달, 하나의 세션에서 여러 질문 순차 진행 + 전체 타이머, 세션 단위 종합 피드백 데이터 모델(종합점수·사고력·실행력·협업력·성장력, `PracticeSession`에 필드 없음) — 2026-07-26에 백엔드 세션/TTS/STT/Gemini API가 확정되기 전까지 설계를 보류하기로 결정(사용자 판단: 지금은 백엔드·디자인이 필요 없는 작업만 진행). API 확정되면 브레인스토밍부터 다시 시작
+  - 참고용 화면설계서 매핑(그때 다시 열어볼 것): Slide 14/15=면접 시작 안내(체크리스트 3항목+마이크 상태 실시간 확인), Slide 16=세션 생성 중, Slide 17=세션 생성 실패, Slide 18=질문 재생·녹음 대기, Slide 19=녹음 중, Slide 20=STT 변환 중, Slide 21=STT 변환 실패, Slide 22=다음 질문 준비, Slide 23=시간 초과, Slide 24=면접 종료 확인 모달(정확한 카피 포함), Slide 25=분석 중, 모달FULL/피드백01~03=종합 피드백 모달 데이터 모델과 질문다시보기 온디맨드 토글 UX
 
 ## 참고
 - 백엔드 계약: `src/types.ts`의 도메인 타입과 `docs/superpowers/specs/2026-07-11-interview-lab-design.md`(별도 저장소 `depth`) 기준

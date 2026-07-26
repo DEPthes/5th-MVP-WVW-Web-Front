@@ -15,7 +15,15 @@ import {
 } from "@/lib/interviewSetupValidation"
 import type { ApplicantProfile } from "@/types"
 
-const CAREER_OPTIONS = ["신입", "1~3년", "4~6년", "7년 이상"]
+// 화면설계서 프로필 등록 모달 기준 경력 카테고리
+const CAREER_OPTIONS = [
+  "관련 경력",
+  "유사 경력",
+  "무경력",
+  "정규직 경력",
+  "계약직·프리랜서 경력",
+  "인턴 및 현장실습",
+]
 const INTERVIEW_TYPE_OPTIONS = ["종합 면접"]
 const DURATION_OPTIONS = [5, 10, 15, 20] as const
 

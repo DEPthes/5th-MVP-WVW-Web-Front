@@ -10,12 +10,13 @@ import {
   type LoginValues,
 } from "@/lib/authValidation"
 
-const INITIAL_VALUES: LoginValues = { userId: "", password: "" }
+const INITIAL_VALUES: LoginValues = { userId: "", password: "", rememberMe: false }
 
 const INPUT_CLASS =
   "rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
 
 const DEFAULT_REDIRECT = "/"
+const SLOGAN = "혼자서도 실전처럼, AI 면접 코칭"
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -25,7 +26,7 @@ export function LoginPage() {
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle")
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  function handleChange(field: keyof LoginValues, value: string) {
+  function handleChange<K extends keyof LoginValues>(field: K, value: LoginValues[K]) {
     setValues((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -34,7 +35,7 @@ export function LoginPage() {
     setSubmitError(null)
     login(values.userId, values.password)
       .then(({ token }) => {
-        setToken(token)
+        setToken(token, values.rememberMe)
         const from =
           (location.state as { from?: { pathname: string } } | null)?.from
             ?.pathname ?? DEFAULT_REDIRECT
@@ -85,6 +86,15 @@ export function LoginPage() {
         )}
       </div>
 
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={values.rememberMe}
+          onChange={(e) => handleChange("rememberMe", e.target.checked)}
+        />
+        자동 로그인
+      </label>
+
       <Button type="submit" disabled={status === "submitting"}>
         로그인
       </Button>
@@ -95,6 +105,10 @@ export function LoginPage() {
       <Link to="/signup" className="text-sm underline">
         회원가입
       </Link>
+
+      <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+        {SLOGAN}
+      </p>
     </form>
   )
 }

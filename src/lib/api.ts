@@ -12,15 +12,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080
 const TOKEN_KEY = "moamyeonwan_token"
 
 export function getToken() {
-  return localStorage.getItem(TOKEN_KEY)
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY)
 }
 
-export function setToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token)
+// remember=true(자동 로그인)면 브라우저를 닫아도 유지되는 localStorage에,
+// false면 탭을 닫으면 사라지는 sessionStorage에 저장한다(화면설계서 로그인 목업 기준).
+export function setToken(token: string, remember = true) {
+  if (remember) {
+    localStorage.setItem(TOKEN_KEY, token)
+  } else {
+    sessionStorage.setItem(TOKEN_KEY, token)
+  }
 }
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem(TOKEN_KEY)
 }
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
