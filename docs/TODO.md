@@ -5,7 +5,7 @@
 ## 완료된 것
 
 - 프로젝트 세팅: Vite + React 19 + TypeScript + Tailwind v4 + shadcn/ui
-- 라우팅: `/login`, `/signup`, `/`(홈), `/materials/new`, `/questions/:materialId`, `/record/:questionId/start`(면접 시작 안내), `/record/:questionId`, `/result/:answerId`, `/history`
+- 라우팅: `/login`, `/signup`, `/`(홈), `/interviews/new`(면접 조건 설정), `/questions/:interviewId`, `/record/:questionId/start`(면접 시작 안내), `/record/:questionId`, `/result/:answerId`, `/history`
 - `HomePage`(`/`) — 최근 면접 목록/CTA 자리, `listSessions()` 대기 중이라 항상 빈 상태+시작 CTA
 - `InterviewStartPage`(`/record/:questionId/start`) — 답변 녹음 전 마이크 권한 확인, 거부 시 안내+재시도
 - `Footer` — 전 화면 공통 노출, 저작권/이용약관·개인정보처리방침(native `<dialog>` 모달)/문의 이메일
@@ -16,10 +16,10 @@
 - `ResultPage`에 종합 피드백(`feedbackText`)과 STT 스크립트(`transcriptText`, "질문다시보기" 자리) 표시
 - 인증 흐름 3종: `src/components/ProtectedRoute.tsx`(비로그인 시 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관), `App.tsx` 네비게이션에 로그인 상태별 로그아웃/로그인 버튼 토글, `apiFetch`가 401 응답 시 토큰 삭제 + `/login` 리다이렉트
 - `LoginPage`/`SignupPage` — `src/lib/authValidation.ts` 검증(아이디/비밀번호, 아이디/이메일/비밀번호/이름/약관동의) + `login()`/`signup()` 연동, 성공 시 토큰 저장 후 리다이렉트
-- `QuestionListPage`(`/questions/:materialId`) — `generateQuestions()` 연동, 질문별 "답변 시작" → `/record/:questionId`
-- `MaterialInputPage` — `src/lib/materialValidation.ts` 입력 검증 + `createMaterial()` 연동, 성공 시 `/questions/:materialId` 이동
+- `QuestionListPage`(`/questions/:interviewId`) — `generateQuestions()` 연동, 질문별 "답변 시작" → `/record/:questionId`
+- `InterviewSetupPage`(`/interviews/new`, 기획서 "면접 조건 설정" 화면 기준) — 지원 프로필 선택/수정/신규등록(native `<dialog>` 모달, `createApplicantProfile`/`updateApplicantProfile` 연동), 기업/직무/경력/면접유형/면접시간(5·10·15·20분) 입력, `src/lib/interviewSetupValidation.ts` 검증 + `createInterviewSetup()` 연동, 성공 시 `/questions/:interviewId` 이동. 기존 "준비자료(자유 텍스트)" 필드는 기획서에 없는 개념이라 제거(2026-07-26)
 - `<LoadingState/>`/`<ErrorState retry=.../>` 공용 컴포넌트로 로딩·에러 UI 통일
-- Vitest 테스트 (api/polling/materialValidation 순수 로직)
+- Vitest 테스트 (api/polling/interviewSetupValidation/authValidation 순수 로직)
 - 라이브러리 사용 현황 및 백엔드 전송 데이터 형태: `docs/LIBRARIES_AND_API.md` 참고
 
 ## 남은 작업
@@ -34,16 +34,14 @@
 - [x] `LoginPage` / `SignupPage` 폼 구현 — `src/lib/authValidation.ts` 검증 + `login()`/`signup()` 연동, 토큰 저장, `location.state.from` 있으면 그 경로로 없으면 `/`(홈)로 리다이렉트
 - [ ] **[디자인 대기]** 두 폼의 최종 레이아웃/스타일 — `기획/화면설계서/` 참고
 
-### 2. 준비자료 입력 (`MaterialInputPage`)
-- [ ] **[API 대기]** 기업명/직무/준비자료 입력 폼 → `createMaterial()` 호출 → `/questions` 이동 — 필드 구성이 명세 확정 전엔 바뀔 수 있음
-- [ ] **[지금 가능]** 입력 검증(필수값 등)은 필드명이 크게 안 바뀔 값들이라 먼저 짜둬도 무방
-- [ ] **[디자인 대기]** 최종 레이아웃
-
-### 2-2. 준비자료 입력 검증
-- [x] 입력 검증(필수값) — `src/lib/materialValidation.ts` + 폼 연동, `createMaterial()` 호출까지 연결
+### 2. 면접 조건 설정 (`InterviewSetupPage`)
+- [x] 지원 프로필(기업/직무/경력) 선택·수정·신규등록 모달, 면접 유형/시간 선택, `src/lib/interviewSetupValidation.ts` 검증 + `createInterviewSetup()`/`createApplicantProfile()`/`updateApplicantProfile()` 연동 — 기획서 화면설계서 Slide 9/10 기준
+- [ ] **[API 대기]** `listApplicantProfiles()` 연동 — 지금은 이번 세션 동안 등록/수정한 프로필만 select에 표시(새로고침 시 초기화)
+- [ ] **[API 대기]** 실제 필드명/응답 형태는 백엔드 확정 전엔 바뀔 수 있음
+- [ ] **[디자인 대기]** 최종 레이아웃 — 화면설계서 Slide 9/10과 비교해 세부 스타일 맞추기
 
 ### 3. 질문 리스트 (`QuestionListPage`)
-- [x] `generateQuestions()` 호출 + 결과 렌더링, 생성 대기 중 로딩 상태, 질문별 "답변 시작" → `/record/:questionId` 이동 — 라우트를 `/questions/:materialId`로 변경(질문 생성에 materialId 필요)
+- [x] `generateQuestions()` 호출 + 결과 렌더링, 생성 대기 중 로딩 상태, 질문별 "답변 시작" → `/record/:questionId/start` 이동 — 라우트를 `/questions/:interviewId`로 변경(질문 생성에 interviewId 필요)
 - [ ] **[디자인 대기]** 최종 레이아웃
 
 ### 4. 히스토리 (`HistoryPage`)
@@ -52,14 +50,15 @@
 - [ ] **[디자인 대기]** 최종 레이아웃
 
 ### 5. 디자인 반영
-- [ ] **[디자인 대기]** 7개 화면 전부 현재 자리표시자 수준 — 시안 나오는 대로 Tailwind/shadcn으로 실제 레이아웃 적용
-- [x] 로딩/에러 상태를 `<LoadingState/>`, `<ErrorState retry=.../>` 공용 컴포넌트로 통일(RecordPage/ResultPage/QuestionListPage/MaterialInputPage 적용) — 디자인 나오면 이 두 컴포넌트만 재스타일링하면 됨
+- [ ] **[디자인 대기]** 전 화면 현재 자리표시자 수준 — 시안 나오는 대로 Tailwind/shadcn으로 실제 레이아웃 적용
+- [x] 로딩/에러 상태를 `<LoadingState/>`, `<ErrorState retry=.../>` 공용 컴포넌트로 통일(RecordPage/ResultPage/QuestionListPage/InterviewSetupPage 적용) — 디자인 나오면 이 두 컴포넌트만 재스타일링하면 됨
 
 ### 6. 기타
 - [ ] **[API 대기]** `.env` 실제 배포용 `VITE_API_BASE_URL` 설정 (현재 `.env.example`만 존재, 실제 서버 주소 필요)
 - [x] 반응형 대응 범위 결정 — 데스크톱 우선 지원, 모바일 대응은 보류
 - [x] 홈 화면 뼈대(`HomePage`, 빈 상태+CTA), 공통 푸터(`Footer`), 면접 시작 안내(`InterviewStartPage`, 마이크 권한) 구현
-- [ ] **[API 대기]** 설정(프로필 수정·계정관리)/지원 프로필(기업·직무·경력 선택·수정·신규등록)/면접 유형·시간 선택/면접 목록 목록·상세 — 아직 미착수. `기획/` 폴더의 기능명세서·화면설계서 기준
+- [x] 지원 프로필(기업·직무·경력 선택·수정·신규등록)/면접 유형·시간 선택 — `InterviewSetupPage`로 구현
+- [ ] **[API 대기]** 설정(프로필 수정·계정관리)/면접 목록 목록·상세 — 아직 미착수. `기획/` 폴더의 기능명세서·화면설계서 기준
 - [ ] **[API 대기, 설계 보류]** 면접 종료 확인 모달, 하나의 세션에서 여러 질문 순차 진행 + 전체 타이머, 세션 단위 종합 피드백 데이터 모델(`PracticeSession`에 필드 없음) — 2026-07-26에 백엔드 세션/TTS/STT/Gemini API가 확정되기 전까지 설계를 보류하기로 결정(사용자 판단: 지금은 백엔드·디자인이 필요 없는 작업만 진행). API 확정되면 브레인스토밍부터 다시 시작
 
 ## 참고

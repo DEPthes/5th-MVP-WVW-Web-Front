@@ -1,10 +1,19 @@
 export type ProcessingStatus = "PENDING" | "DONE" | "FAILED"
 
-export interface PreparationMaterial {
+export interface ApplicantProfile {
   id: string
   companyName: string
   jobRole: string
-  materialText: string
+  careerYears: string
+}
+
+export interface InterviewSetup {
+  id: string
+  companyName: string
+  jobRole: string
+  careerYears: string
+  interviewType: string
+  durationMinutes: number
 }
 
 export interface Question {
@@ -14,7 +23,7 @@ export interface Question {
 
 export interface QuestionSet {
   id: string
-  materialId: string
+  interviewId: string
   questions: Question[]
 }
 
@@ -29,7 +38,7 @@ export interface AnswerRecord {
 
 export interface PracticeSession {
   id: string
-  materialId: string
+  interviewId: string
   createdAt: string
   answers: AnswerRecord[]
 }

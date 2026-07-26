@@ -9,7 +9,7 @@
 | 라이브러리 | 버전 | 이 프로젝트에서의 용도 |
 |---|---|---|
 | `react` / `react-dom` | ^19.2.7 | UI 렌더링. 전부 함수형 컴포넌트 + hooks (`useState`/`useEffect`/`useCallback`/`useRef`) |
-| `react-router-dom` | ^7.18.1 | 라우팅. `App.tsx`에서 7개 경로(`/login`, `/signup`, `/materials/new`, `/questions`, `/record`, `/result/:answerId`, `/history`) 정의, `ResultPage`에서 `useParams`로 `answerId` 추출 |
+| `react-router-dom` | ^7.18.1 | 라우팅. `App.tsx`에서 `/login`, `/signup`, `/`(홈), `/interviews/new`, `/questions/:interviewId`, `/record/:questionId/start`, `/record/:questionId`, `/result/:answerId`, `/history` 정의 |
 | `tailwindcss` + `@tailwindcss/vite` | ^4.3.2 | 유틸리티 CSS, Vite 플러그인으로 빌드에 통합(별도 PostCSS 설정 없음) |
 | `shadcn` | ^4.13.0 | UI 컴포넌트 CLI. `src/components/ui/button.tsx` 등 프로젝트에 복사되어 들어온 컴포넌트의 출처(런타임엔 사용 안 함, 컴포넌트 생성/업데이트 시에만 CLI로 호출) |
 | `@base-ui/react` | ^1.6.0 | shadcn 컴포넌트가 내부적으로 쓰는 헤드리스 UI 프리미티브(접근성 처리된 버튼/포커스 등) |
@@ -55,13 +55,29 @@
 
 로그인은 아이디 기반이며, 이메일은 회원가입 시에만 수집해 비밀번호 재설정 용도로 사용한다(기획서 기능명세서 #2, #3 기준).
 
-### `POST /api/materials`
-```json
-{ "companyName": "string", "jobRole": "string", "materialText": "string" }
-```
+### `GET /api/profiles` — 저장된 지원 프로필 목록 (`InterviewSetupPage` 진입 시 자리만 있고 아직 미연동)
+응답: `ApplicantProfile[] { id, companyName, jobRole, careerYears }`
 
-### `POST /api/materials/:id/questions`
-바디 없음. 응답: `QuestionSet { id, materialId, questions: [{ id, text }] }`
+### `POST /api/profiles`, `PUT /api/profiles/:id` — 지원 프로필 신규등록/수정 모달에서 호출
+```json
+{ "companyName": "string", "jobRole": "string", "careerYears": "string" }
+```
+응답: `ApplicantProfile`
+
+### `POST /api/interviews` — 면접 조건 설정(`InterviewSetupPage`) 제출
+```json
+{
+  "companyName": "string",
+  "jobRole": "string",
+  "careerYears": "string",
+  "interviewType": "string",
+  "durationMinutes": 5 | 10 | 15 | 20
+}
+```
+응답: `InterviewSetup`(위 필드 + `id`). "준비자료(자유 텍스트)" 필드는 기획서에 없는 개념이라 제거함(2026-07-26) — 질문은 이 조건만으로 Gemini가 생성(기능명세서 #9).
+
+### `POST /api/interviews/:id/questions`
+바디 없음. 응답: `QuestionSet { id, interviewId, questions: [{ id, text }] }`
 
 ### `POST /api/answers` — 답변 업로드 (`RecordPage`가 녹음 종료 시 자동 호출)
 `multipart/form-data`:
@@ -88,4 +104,4 @@
 원본 오디오는 서버가 STT 변환 완료 후 즉시 삭제하는 것을 전제로 한다 — 다시듣기 기능 없음(기획서 정책).
 
 ### `GET /api/sessions`, `GET /api/sessions/:id`
-응답: `PracticeSession { id, materialId, createdAt, answers: AnswerRecord[] }`
+응답: `PracticeSession { id, interviewId, createdAt, answers: AnswerRecord[] }`

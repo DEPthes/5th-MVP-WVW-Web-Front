@@ -2,7 +2,7 @@ import { Link, Route, Routes, useNavigate } from 'react-router-dom'
 import { LoginPage } from '@/pages/LoginPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { HomePage } from '@/pages/HomePage'
-import { MaterialInputPage } from '@/pages/MaterialInputPage'
+import { InterviewSetupPage } from '@/pages/InterviewSetupPage'
 import { QuestionListPage } from '@/pages/QuestionListPage'
 import { InterviewStartPage } from '@/pages/InterviewStartPage'
 import { RecordPage } from '@/pages/RecordPage'
@@ -14,8 +14,8 @@ import { clearToken, getToken } from '@/lib/api'
 
 const NAV_LINKS = [
   { to: '/', label: '홈' },
-  { to: '/materials/new', label: '자료입력' },
-  { to: '/questions/demo-material-id', label: '질문리스트' },
+  { to: '/interviews/new', label: '면접설정' },
+  { to: '/questions/demo-interview-id', label: '질문리스트' },
   { to: '/record/demo-question-id/start', label: '녹화' },
   { to: '/result/demo-answer-id', label: '결과' },
   { to: '/history', label: '히스토리' },
@@ -61,15 +61,15 @@ function App() {
           }
         />
         <Route
-          path="/materials/new"
+          path="/interviews/new"
           element={
             <ProtectedRoute>
-              <MaterialInputPage />
+              <InterviewSetupPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/questions/:materialId"
+          path="/questions/:interviewId"
           element={
             <ProtectedRoute>
               <QuestionListPage />

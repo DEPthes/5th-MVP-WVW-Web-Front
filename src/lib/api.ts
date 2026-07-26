@@ -1,7 +1,8 @@
 import type {
   AnswerRecord,
+  ApplicantProfile,
+  InterviewSetup,
   PracticeSession,
-  PreparationMaterial,
   QuestionSet,
 } from "@/types"
 
@@ -67,23 +68,50 @@ export function login(userId: string, password: string) {
   })
 }
 
-export function createMaterial(input: {
+export function listApplicantProfiles() {
+  return apiFetch<ApplicantProfile[]>("/api/profiles")
+}
+
+export function createApplicantProfile(input: {
   companyName: string
   jobRole: string
-  materialText: string
+  careerYears: string
 }) {
-  return apiFetch<PreparationMaterial>("/api/materials", {
+  return apiFetch<ApplicantProfile>("/api/profiles", {
     method: "POST",
     body: JSON.stringify(input),
   })
 }
 
-export function getMaterial(id: string) {
-  return apiFetch<PreparationMaterial>(`/api/materials/${id}`)
+export function updateApplicantProfile(
+  id: string,
+  input: { companyName: string; jobRole: string; careerYears: string }
+) {
+  return apiFetch<ApplicantProfile>(`/api/profiles/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
 }
 
-export function generateQuestions(materialId: string) {
-  return apiFetch<QuestionSet>(`/api/materials/${materialId}/questions`, {
+export function createInterviewSetup(input: {
+  companyName: string
+  jobRole: string
+  careerYears: string
+  interviewType: string
+  durationMinutes: number
+}) {
+  return apiFetch<InterviewSetup>("/api/interviews", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export function getInterviewSetup(id: string) {
+  return apiFetch<InterviewSetup>(`/api/interviews/${id}`)
+}
+
+export function generateQuestions(interviewId: string) {
+  return apiFetch<QuestionSet>(`/api/interviews/${interviewId}/questions`, {
     method: "POST",
   })
 }

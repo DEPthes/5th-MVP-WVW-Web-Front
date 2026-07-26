@@ -6,18 +6,18 @@ import { generateQuestions } from "@/lib/api"
 import type { QuestionSet } from "@/types"
 
 export function QuestionListPage() {
-  const { materialId } = useParams<{ materialId: string }>()
+  const { interviewId } = useParams<{ interviewId: string }>()
   const [questionSet, setQuestionSet] = useState<QuestionSet | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!materialId) return
-    generateQuestions(materialId)
+    if (!interviewId) return
+    generateQuestions(interviewId)
       .then(setQuestionSet)
       .catch((err) =>
         setError(err instanceof Error ? err.message : "질문 생성에 실패했습니다.")
       )
-  }, [materialId])
+  }, [interviewId])
 
   return (
     <div className="flex flex-col gap-4">

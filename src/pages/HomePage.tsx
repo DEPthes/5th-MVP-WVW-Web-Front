@@ -8,7 +8,7 @@ export function HomePage() {
       <p className="text-sm text-muted-foreground">
         아직 진행한 모의면접이 없습니다. 첫 모의면접을 시작해보세요.
       </p>
-      <Link to="/materials/new" className="underline">
+      <Link to="/interviews/new" className="underline">
         모의면접 시작하기
       </Link>
     </div>
