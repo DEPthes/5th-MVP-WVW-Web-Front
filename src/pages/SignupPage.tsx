@@ -1,9 +1,11 @@
 import { useRef, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ErrorState } from "@/components/ErrorState"
+import { Footer } from "@/components/Footer"
 import { LoadingState } from "@/components/LoadingState"
 import { setToken, signup } from "@/lib/api"
+import { cn } from "@/lib/utils"
 import {
   validateSignup,
   type SignupErrors,
@@ -19,15 +21,21 @@ const INITIAL_VALUES: SignupValues = {
   agreedToPrivacy: false,
 }
 
-const INPUT_CLASS =
-  "rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
-
 // ponytail: 기획서상 회원가입 후 "초기 프로필 설정"으로 이동해야 하나 해당 화면 미구현 — 홈으로 임시 대체.
 const DEFAULT_REDIRECT = "/"
 
 // ponytail: 실제 개인정보 수집·이용 안내 문구 확정 전 자리표시자.
-const PRIVACY_NOTICE =
-  "개인정보 수집 및 이용 안내 문구는 준비 중입니다."
+const PRIVACY_NOTICE = "개인정보 수집 및 이용 안내 문구는 준비 중입니다."
+
+const USER_ID_HINT = "영문, 숫자를 모두 사용하여 8~12자 이내로 입력해 주세요."
+const PASSWORD_HINT = "영문, 숫자, 특수 기호를 모두 사용하여 8자 이상 입력해 주세요."
+
+function fieldClass(hasError: boolean) {
+  return cn(
+    "h-[58px] w-full rounded-[12px] border bg-background px-4 text-sm text-foreground placeholder:text-contents-tertiary focus:outline-none focus:ring-2 focus:ring-ring",
+    hasError ? "border-destructive" : "border-input"
+  )
+}
 
 export function SignupPage() {
   const navigate = useNavigate()
@@ -35,6 +43,8 @@ export function SignupPage() {
   const [errors, setErrors] = useState<SignupErrors>({})
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle")
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const privacyDialogRef = useRef<HTMLDialogElement>(null)
 
   function handleChange<K extends keyof SignupValues>(
@@ -70,127 +80,222 @@ export function SignupPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h1>회원가입</h1>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="email">이메일</label>
-        <input
-          id="email"
-          type="email"
-          value={values.email}
-          onChange={(e) => handleChange("email", e.target.value)}
-          className={INPUT_CLASS}
-        />
-        {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-        <p className="text-xs text-muted-foreground">
-          비밀번호 재설정 시에만 사용됩니다.
+    <div className="mx-auto flex max-w-2xl flex-col p-6">
+      <div className="flex justify-center py-12">
+      <div className="w-full max-w-[480px] rounded-[20px] border border-border bg-card p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06),0_20px_56px_rgba(53,99,233,0.11)]">
+        <h1 className="text-heading font-bold text-foreground">회원가입</h1>
+        <p className="mt-2 text-sm text-contents-tertiary">
+          AI 면접 플랫폼에 오신 것을 환영합니다.
         </p>
-      </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="userId">아이디</label>
-        <input
-          id="userId"
-          value={values.userId}
-          onChange={(e) => handleChange("userId", e.target.value)}
-          className={INPUT_CLASS}
-        />
-        <p className="text-xs text-muted-foreground">
-          영문, 숫자를 모두 사용하여 8-12자 이내로 입력해 주세요.
-        </p>
-        {errors.userId && <p className="text-sm text-destructive">{errors.userId}</p>}
-      </div>
+        <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="email"
+              className="text-label font-semibold text-contents-secondary"
+            >
+              이메일
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={values.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              placeholder="이메일을 입력하세요"
+              className={fieldClass(Boolean(errors.email))}
+            />
+            {errors.email && (
+              <p className="text-xs text-destructive">{errors.email}</p>
+            )}
+          </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password">비밀번호</label>
-        <input
-          id="password"
-          type="password"
-          value={values.password}
-          onChange={(e) => handleChange("password", e.target.value)}
-          className={INPUT_CLASS}
-        />
-        <p className="text-xs text-muted-foreground">
-          영문, 숫자, 특수기호를 모두 사용하여 8자 이상 입력해주세요.
-        </p>
-        {errors.password && (
-          <p className="text-sm text-destructive">{errors.password}</p>
-        )}
-      </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="userId"
+              className="text-label font-semibold text-contents-secondary"
+            >
+              아이디
+            </label>
+            <input
+              id="userId"
+              value={values.userId}
+              onChange={(e) => handleChange("userId", e.target.value)}
+              placeholder="아이디를 입력하세요"
+              className={fieldClass(Boolean(errors.userId))}
+            />
+            <p
+              className={cn(
+                "text-xs",
+                errors.userId ? "text-destructive" : "text-contents-tertiary"
+              )}
+            >
+              {errors.userId ?? USER_ID_HINT}
+            </p>
+          </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="confirmPassword">비밀번호 확인</label>
-        <input
-          id="confirmPassword"
-          type="password"
-          value={values.confirmPassword}
-          onChange={(e) => handleChange("confirmPassword", e.target.value)}
-          className={INPUT_CLASS}
-        />
-        {errors.confirmPassword && (
-          <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-        )}
-      </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="password"
+              className="text-label font-semibold text-contents-secondary"
+            >
+              비밀번호
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={values.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                placeholder="비밀번호를 입력하세요"
+                className={cn(fieldClass(Boolean(errors.password)), "pr-11")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-contents-tertiary"
+                aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 표시"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <p
+              className={cn(
+                "text-xs",
+                errors.password ? "text-destructive" : "text-contents-tertiary"
+              )}
+            >
+              {errors.password ?? PASSWORD_HINT}
+            </p>
+          </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="name">이름</label>
-        <input
-          id="name"
-          value={values.name}
-          onChange={(e) => handleChange("name", e.target.value)}
-          className={INPUT_CLASS}
-        />
-        {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-      </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="confirmPassword"
+              className="text-label font-semibold text-contents-secondary"
+            >
+              비밀번호 확인
+            </label>
+            <div className="relative">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={values.confirmPassword}
+                onChange={(e) =>
+                  handleChange("confirmPassword", e.target.value)
+                }
+                placeholder="비밀번호를 다시 입력하세요"
+                className={cn(
+                  fieldClass(Boolean(errors.confirmPassword)),
+                  "pr-11"
+                )}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-contents-tertiary"
+                aria-label={
+                  showConfirmPassword ? "비밀번호 숨기기" : "비밀번호 표시"
+                }
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <p className="text-xs text-destructive">
+                {errors.confirmPassword}
+              </p>
+            )}
+          </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={values.agreedToPrivacy}
-            onChange={(e) => handleChange("agreedToPrivacy", e.target.checked)}
-          />
-          개인정보 수집 및 이용에 동의합니다. (필수)
-        </label>
-        <Button
-          type="button"
-          variant="outline"
-          className="self-start"
-          onClick={() => privacyDialogRef.current?.showModal()}
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="name"
+              className="text-label font-semibold text-contents-secondary"
+            >
+              이름
+            </label>
+            <input
+              id="name"
+              value={values.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              placeholder="이름을 입력하세요"
+              className={fieldClass(Boolean(errors.name))}
+            />
+            {errors.name && (
+              <p className="text-xs text-destructive">{errors.name}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-4 rounded-[12px] border border-border bg-[#F9FAFB] p-5">
+            <p className="text-label font-semibold text-foreground">
+              개인 정보 수집 및 이용 동의
+            </p>
+            <label className="flex items-center gap-2 text-sm text-contents-secondary">
+              <input
+                type="checkbox"
+                checked={values.agreedToPrivacy}
+                onChange={(e) =>
+                  handleChange("agreedToPrivacy", e.target.checked)
+                }
+                className="size-[18px] accent-primary"
+              />
+              개인 정보 수집 및 이용에 동의합니다.{" "}
+              <span className="text-primary">(필수)</span>
+            </label>
+            <div className="h-px w-full bg-border" />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 w-full rounded-[10px] text-sm font-normal"
+              onClick={() => privacyDialogRef.current?.showModal()}
+            >
+              개인정보 수집 및 이용 안내
+            </Button>
+            {errors.agreedToPrivacy && (
+              <p className="text-xs text-destructive">
+                {errors.agreedToPrivacy}
+              </p>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            disabled={status === "submitting"}
+            className="h-14 w-full text-label"
+          >
+            회원가입
+          </Button>
+
+          {status === "submitting" && <LoadingState message="가입하는 중..." />}
+          {status === "error" && submitError && (
+            <p className="text-sm text-destructive">{submitError}</p>
+          )}
+        </form>
+
+        <div className="mt-6 flex items-center justify-between text-sm">
+          <span className="text-contents-tertiary">이미 계정이 있으세요?</span>
+          <Link to="/login" className="text-primary underline underline-offset-4">
+            로그인
+          </Link>
+        </div>
+
+        <dialog
+          ref={privacyDialogRef}
+          className="rounded-lg border border-border p-4 backdrop:bg-black/50"
         >
-          개인정보 수집 및 이용 안내
-        </Button>
-        {errors.agreedToPrivacy && (
-          <p className="text-sm text-destructive">{errors.agreedToPrivacy}</p>
-        )}
+          <p className="text-sm text-foreground">{PRIVACY_NOTICE}</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3"
+            onClick={() => privacyDialogRef.current?.close()}
+          >
+            닫기
+          </Button>
+        </dialog>
       </div>
-
-      <Button type="submit" disabled={status === "submitting"}>
-        회원가입
-      </Button>
-
-      {status === "submitting" && <LoadingState message="가입하는 중..." />}
-      {status === "error" && <ErrorState message={submitError!} retry={submit} />}
-
-      <Link to="/login" className="text-sm underline">
-        로그인으로 돌아가기
-      </Link>
-
-      <dialog
-        ref={privacyDialogRef}
-        className="rounded-lg border border-border p-4 backdrop:bg-black/50"
-      >
-        <p className="text-sm text-foreground">{PRIVACY_NOTICE}</p>
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-3"
-          onClick={() => privacyDialogRef.current?.close()}
-        >
-          닫기
-        </Button>
-      </dialog>
-    </form>
+      </div>
+      <Footer />
+    </div>
   )
 }
