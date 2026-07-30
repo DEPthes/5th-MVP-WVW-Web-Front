@@ -1,13 +1,26 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource/pretendard/300.css";
+@import "@fontsource/pretendard/400.css";
+@import "@fontsource/pretendard/600.css";
+@import "@fontsource/pretendard/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-sans: 'Pretendard', sans-serif;
+    --text-heading: 2.5rem;
+    --text-label: 1.25rem;
+    --text-body: 0.875rem;
+    --text-caption: 0.75rem;
+    --color-positive: var(--positive);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
+    --color-contents-secondary: var(--contents-secondary);
+    --color-contents-tertiary: var(--contents-tertiary);
+    --color-modal-background: var(--modal-background);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,24 +62,30 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
+    --background: #FCFCFC;
+    --foreground: #17191A;
+    --card: #FCFCFC;
+    --card-foreground: #17191A;
+    --popover: #FCFCFC;
+    --popover-foreground: #17191A;
+    --primary: #3563E9;
+    --primary-foreground: #FCFCFC;
+    --secondary: #85A8F8;
+    --secondary-foreground: #17191A;
     --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
+    --muted-foreground: #A8ADB5;
     --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --accent-foreground: #17191A;
+    --destructive: #DC2626;
+    --border: #E5E7EB;
+    --input: #E5E7EB;
+    --ring: #85A8F8;
+    --positive: #22C55E;
+    --warning: #F59E0B;
+    --info: #0EA5E9;
+    --contents-secondary: #2D3647;
+    --contents-tertiary: #A8ADB5;
+    --modal-background: #111418;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
