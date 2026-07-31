@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
+import { AlertTriangle, Eye, EyeOff, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ErrorState } from "@/components/ErrorState"
 import { LoadingState } from "@/components/LoadingState"
+import { cn } from "@/lib/utils"
 import {
   changePassword,
   clearToken,
@@ -19,8 +21,17 @@ import {
   type ProfileValues,
 } from "@/lib/settingsValidation"
 
-const INPUT_CLASS =
-  "rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
+const FIELD_CLASS =
+  "h-12 w-full rounded-[12px] border border-input bg-background px-4 text-sm text-foreground placeholder:text-contents-tertiary focus:outline-none focus:ring-2 focus:ring-ring"
+const LABEL_CLASS = "text-sm font-medium text-contents-secondary"
+
+function Card({ children }: { children: ReactNode }) {
+  return (
+    <section className="rounded-[20px] bg-card p-8 shadow-[0_4px_10px_rgba(0,0,0,0.06)]">
+      {children}
+    </section>
+  )
+}
 
 export function SettingsPage() {
   const navigate = useNavigate()
@@ -78,9 +89,16 @@ export function SettingsPage() {
     "idle" | "submitting" | "error" | "done"
   >("idle")
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [visiblePassword, setVisiblePassword] = useState<
+    Partial<Record<keyof PasswordChangeValues, boolean>>
+  >({})
 
   function handlePasswordChange(field: keyof PasswordChangeValues, value: string) {
     setPasswordValues((prev) => ({ ...prev, [field]: value }))
+  }
+
+  function toggleVisiblePassword(field: keyof PasswordChangeValues) {
+    setVisiblePassword((prev) => ({ ...prev, [field]: !prev[field] }))
   }
 
   function submitPasswordChange() {
@@ -133,160 +151,212 @@ export function SettingsPage() {
       })
   }
 
+  const passwordFields: {
+    field: keyof PasswordChangeValues
+    label: string
+    placeholder: string
+  }[] = [
+    {
+      field: "currentPassword",
+      label: "현재 비밀번호",
+      placeholder: "현재 비밀번호를 입력하세요",
+    },
+    {
+      field: "newPassword",
+      label: "새 비밀번호",
+      placeholder: "새 비밀번호를 입력하세요",
+    },
+    {
+      field: "confirmPassword",
+      label: "새 비밀번호 확인",
+      placeholder: "새 비밀번호를 다시 입력하세요",
+    },
+  ]
+
   return (
     <div className="flex flex-col gap-6">
-      <h1>설정</h1>
+      <h1 className="text-heading font-bold text-foreground">설정</h1>
 
-      <section className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-sm font-medium">프로필 수정</h2>
-          <p className="text-sm text-muted-foreground">
-            지원하고자 하는 직무를 선택하고, 프로필을 설정할 수 있습니다.
-          </p>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="nickname">닉네임</label>
-          <input
-            id="nickname"
-            value={profile.nickname}
-            onChange={(e) => handleProfileChange("nickname", e.target.value)}
-            className={INPUT_CLASS}
-          />
-          {profileErrors.nickname && (
-            <p className="text-sm text-destructive">{profileErrors.nickname}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="interestedJobRole">관심 직무</label>
-          <input
-            id="interestedJobRole"
-            value={profile.interestedJobRole}
-            onChange={(e) => handleProfileChange("interestedJobRole", e.target.value)}
-            className={INPUT_CLASS}
-          />
-          {profileErrors.interestedJobRole && (
-            <p className="text-sm text-destructive">{profileErrors.interestedJobRole}</p>
-          )}
-        </div>
-        <Button
-          type="button"
-          onClick={handleProfileSubmit}
-          disabled={profileStatus === "submitting"}
-          className="self-start"
-        >
-          저장
-        </Button>
-        {profileStatus === "submitting" && <LoadingState message="저장하는 중..." />}
-        {profileStatus === "saved" && (
-          <p className="text-sm text-muted-foreground">저장되었습니다.</p>
-        )}
-        {profileStatus === "error" && (
-          <ErrorState message={profileError!} retry={saveProfile} />
-        )}
-      </section>
+      <Card>
+        <h2 className="text-label font-bold text-foreground">프로필 수정</h2>
+        <p className="mt-1.5 text-sm text-contents-tertiary">
+          지원하고자 하는 직무를 선택하고 프로필을 설정할 수 있습니다.
+        </p>
 
-      <section className="flex flex-col gap-4 border-t border-border pt-6">
-        <div>
-          <h2 className="text-sm font-medium">계정 관리</h2>
-          <p className="text-sm text-muted-foreground">
-            로그인 정보와 비밀번호 변경, 로그아웃, 탈퇴를 할 수 있습니다.
-          </p>
-        </div>
+        <div className="mt-6 flex items-start gap-7">
+          <div className="flex size-[88px] shrink-0 items-center justify-center rounded-full border-2 border-[#C5D4FB] bg-[#F0F4FF]">
+            <User size={32} className="text-primary" />
+          </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="loginInfo">로그인 정보</label>
+          <div className="flex flex-1 flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="nickname" className={LABEL_CLASS}>
+                닉네임
+              </label>
+              <input
+                id="nickname"
+                value={profile.nickname}
+                onChange={(e) => handleProfileChange("nickname", e.target.value)}
+                placeholder="닉네임을 입력하세요"
+                className={FIELD_CLASS}
+              />
+              {profileErrors.nickname && (
+                <p className="text-xs text-destructive">{profileErrors.nickname}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="interestedJobRole" className={LABEL_CLASS}>
+                관심 직무
+              </label>
+              <input
+                id="interestedJobRole"
+                value={profile.interestedJobRole}
+                onChange={(e) =>
+                  handleProfileChange("interestedJobRole", e.target.value)
+                }
+                placeholder="직무를 입력하세요"
+                className={FIELD_CLASS}
+              />
+              {profileErrors.interestedJobRole && (
+                <p className="text-xs text-destructive">
+                  {profileErrors.interestedJobRole}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={handleProfileSubmit}
+                disabled={profileStatus === "submitting"}
+              >
+                저장
+              </Button>
+            </div>
+            {profileStatus === "submitting" && (
+              <LoadingState message="저장하는 중..." />
+            )}
+            {profileStatus === "saved" && (
+              <p className="text-right text-sm text-contents-tertiary">
+                저장되었습니다.
+              </p>
+            )}
+            {profileStatus === "error" && (
+              <ErrorState message={profileError!} retry={saveProfile} />
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="text-label font-bold text-foreground">계정 관리</h2>
+        <p className="mt-1.5 text-sm text-contents-tertiary">
+          로그인 정보와 비밀번호를 변경하거나 로그아웃 및 회원탈퇴를 할 수 있습니다.
+        </p>
+
+        <div className="mt-7 flex items-center justify-between">
+          <span className="text-base font-semibold text-foreground">로그인 정보</span>
+          <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
+            로그아웃
+          </Button>
+        </div>
+        <div className="mt-3 flex flex-col gap-1.5">
+          <label htmlFor="loginInfo" className={LABEL_CLASS}>
+            이메일
+          </label>
           <input
             id="loginInfo"
             value={userId}
             readOnly
-            className={`${INPUT_CLASS} text-muted-foreground`}
+            className={cn(FIELD_CLASS, "border-[#F0F2F5] bg-[#F8FAFB] text-contents-tertiary")}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-contents-tertiary">
             로그인 정보는 변경할 수 없습니다. 변경이 필요하면 관리자에게 문의해주세요.
           </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleLogout}
-            className="self-start"
-          >
-            로그아웃
-          </Button>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">비밀번호 변경</span>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="currentPassword">현재 비밀번호</label>
-            <input
-              id="currentPassword"
-              type="password"
-              value={passwordValues.currentPassword}
-              onChange={(e) => handlePasswordChange("currentPassword", e.target.value)}
-              className={INPUT_CLASS}
-            />
-            {passwordErrors.currentPassword && (
-              <p className="text-sm text-destructive">{passwordErrors.currentPassword}</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="newPassword">새 비밀번호</label>
-            <input
-              id="newPassword"
-              type="password"
-              value={passwordValues.newPassword}
-              onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
-              className={INPUT_CLASS}
-            />
-            {passwordErrors.newPassword && (
-              <p className="text-sm text-destructive">{passwordErrors.newPassword}</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="confirmPassword">새 비밀번호 확인</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={passwordValues.confirmPassword}
-              onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
-              className={INPUT_CLASS}
-            />
-            {passwordErrors.confirmPassword && (
-              <p className="text-sm text-destructive">{passwordErrors.confirmPassword}</p>
-            )}
-          </div>
+        <div className="my-7 h-px w-full bg-[#F0F2F5]" />
+
+        <div className="flex items-center justify-between">
+          <span className="text-base font-semibold text-foreground">비밀번호 변경</span>
           <Button
             type="button"
-            variant="outline"
             onClick={handlePasswordSubmit}
-            disabled={
-              passwordStatus === "submitting" ||
-              !passwordValues.currentPassword ||
-              !passwordValues.newPassword ||
-              !passwordValues.confirmPassword
-            }
-            className="self-start"
+            disabled={passwordStatus === "submitting"}
           >
             비밀번호 변경
           </Button>
-          {passwordStatus === "submitting" && <LoadingState message="변경하는 중..." />}
+        </div>
+        <div className="mt-4 flex flex-col gap-4">
+          {passwordFields.map(({ field, label, placeholder }) => (
+            <div key={field} className="flex flex-col gap-1.5">
+              <label htmlFor={field} className={LABEL_CLASS}>
+                {label}
+              </label>
+              <div className="relative">
+                <input
+                  id={field}
+                  type={visiblePassword[field] ? "text" : "password"}
+                  value={passwordValues[field]}
+                  onChange={(e) => handlePasswordChange(field, e.target.value)}
+                  placeholder={placeholder}
+                  className={cn(FIELD_CLASS, "pr-11")}
+                />
+                <button
+                  type="button"
+                  onClick={() => toggleVisiblePassword(field)}
+                  className="absolute inset-y-0 right-3 flex items-center text-contents-tertiary"
+                  aria-label={visiblePassword[field] ? "비밀번호 숨기기" : "비밀번호 표시"}
+                >
+                  {visiblePassword[field] ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {passwordErrors[field] && (
+                <p className="text-xs text-destructive">{passwordErrors[field]}</p>
+              )}
+            </div>
+          ))}
+          {passwordStatus === "submitting" && (
+            <LoadingState message="변경하는 중..." />
+          )}
           {passwordStatus === "done" && (
-            <p className="text-sm text-muted-foreground">비밀번호가 변경되었습니다.</p>
+            <p className="text-sm text-contents-tertiary">비밀번호가 변경되었습니다.</p>
           )}
           {passwordStatus === "error" && (
             <ErrorState message={passwordError!} retry={submitPasswordChange} />
           )}
         </div>
 
-        <Button
-          type="button"
-          variant="destructive"
-          onClick={() => withdrawDialogRef.current?.showModal()}
-          className="self-start"
-        >
-          탈퇴하기
-        </Button>
-      </section>
+        <div className="my-7 h-px w-full bg-[#F0F2F5]" />
+
+        <div className="flex flex-col gap-4 rounded-[14px] border border-[#FECACA] bg-[#FEF2F2] px-6 py-5">
+          <div className="flex gap-3">
+            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-destructive" />
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[15px] font-bold text-destructive">
+                계정 삭제 (탈퇴)
+              </span>
+              <p className="text-[13px] leading-relaxed text-[#EF4444]">
+                계정을 삭제하면 이메일 / 이름 / 비밀번호 등 식별 가능한 정보가 즉시
+                마스킹되어 복구할 수 없습니다.
+                <br />
+                면접 기록과 사용자 정보는 탈퇴 즉시 영구적으로 삭제되며, 이 작업은
+                되돌릴 수 없습니다.
+              </p>
+              <div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => withdrawDialogRef.current?.showModal()}
+                >
+                  탈퇴하기
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <dialog
         ref={withdrawDialogRef}

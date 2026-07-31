@@ -1,8 +1,15 @@
-import { useRef, useState, type FormEvent } from "react"
-import { useNavigate } from "react-router-dom"
+import {
+  useRef,
+  useState,
+  type FormEvent,
+  type SelectHTMLAttributes,
+} from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ErrorState } from "@/components/ErrorState"
 import { LoadingState } from "@/components/LoadingState"
+import { cn } from "@/lib/utils"
 import {
   createApplicantProfile,
   createInterviewSetup,
@@ -35,8 +42,29 @@ const INITIAL_VALUES: InterviewSetupValues = {
   durationMinutes: 10,
 }
 
-const INPUT_CLASS =
-  "rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
+const FIELD_CLASS =
+  "h-14 w-full rounded-[12px] border border-input bg-background px-4 text-sm text-foreground placeholder:text-contents-tertiary focus:outline-none focus:ring-2 focus:ring-ring"
+const SELECT_CLASS = cn(FIELD_CLASS, "appearance-none pr-10")
+const LABEL_CLASS = "text-label font-semibold text-contents-secondary"
+
+function SectionDivider() {
+  return <div className="h-px w-full bg-border" />
+}
+
+function SelectField({
+  className,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div className="relative">
+      <select {...props} className={cn(SELECT_CLASS, className)} />
+      <ChevronDown
+        size={18}
+        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-contents-tertiary"
+      />
+    </div>
+  )
+}
 
 export function InterviewSetupPage() {
   const navigate = useNavigate()
@@ -154,132 +182,214 @@ export function InterviewSetupPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div>
-        <h1>면접 조건 설정</h1>
-        <p className="text-sm text-muted-foreground">
-          지원 정보와 조건을 확인하면 예상 질문을 준비합니다.
-        </p>
-      </div>
+    <form onSubmit={handleSubmit} className="flex gap-8">
+      <div className="flex flex-1 flex-col gap-8">
+        <div className="flex items-center gap-1 text-sm text-contents-tertiary">
+          <Link to="/" className="hover:text-contents-secondary">
+            홈
+          </Link>
+          <ChevronRight size={13} />
+          <span>AI 모의면접</span>
+          <ChevronRight size={13} />
+          <span className="text-contents-secondary">새 면접</span>
+        </div>
 
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">지원 프로필</h2>
-        <label htmlFor="savedProfile" className="text-sm text-muted-foreground">
-          저장된 프로필 불러오기
-        </label>
-        <select
-          id="savedProfile"
-          value={selectedProfileId}
-          onChange={(e) => handleSelectProfile(e.target.value)}
-          className={INPUT_CLASS}
-        >
-          <option value="">새로 입력</option>
-          {profiles.map((profile) => (
-            <option key={profile.id} value={profile.id}>
-              {profile.jobRole} / {profile.careerYears}
-            </option>
-          ))}
-        </select>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={openEditProfileDialog}
-            disabled={!selectedProfileId}
-          >
-            프로필 수정
-          </Button>
-          <Button type="button" variant="outline" onClick={openNewProfileDialog}>
-            새 프로필 등록
-          </Button>
+        <div>
+          <h1 className="text-heading font-bold text-foreground">
+            면접 조건 설정
+          </h1>
+          <p className="mt-2 text-sm text-contents-tertiary">
+            지원 정보와 조건을 확인하면 예상 질문을 준비합니다.
+          </p>
         </div>
-      </div>
 
-      <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">지원 정보</h2>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="companyName">기업</label>
-          <input
-            id="companyName"
-            value={values.companyName}
-            onChange={(e) => handleChange("companyName", e.target.value)}
-            className={INPUT_CLASS}
-          />
-          {errors.companyName && (
-            <p className="text-sm text-destructive">{errors.companyName}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="jobRole">직무</label>
-          <input
-            id="jobRole"
-            value={values.jobRole}
-            onChange={(e) => handleChange("jobRole", e.target.value)}
-            className={INPUT_CLASS}
-          />
-          {errors.jobRole && (
-            <p className="text-sm text-destructive">{errors.jobRole}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="careerYears">경력</label>
-          <select
-            id="careerYears"
-            value={values.careerYears}
-            onChange={(e) => handleChange("careerYears", e.target.value)}
-            className={INPUT_CLASS}
+        <SectionDivider />
+
+        <div className="flex flex-col gap-6">
+          <div>
+            <h2 className="text-label font-semibold text-foreground">
+              지원 프로필
+            </h2>
+            <p className="mt-1 text-sm text-contents-tertiary">
+              저장된 프로필 불러오기
+            </p>
+          </div>
+          <SelectField
+            value={selectedProfileId}
+            onChange={(e) => handleSelectProfile(e.target.value)}
           >
-            {CAREER_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            <option value="">새로 입력</option>
+            {profiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.jobRole} / {profile.careerYears}
               </option>
             ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">면접 조건</h2>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="interviewType">면접 유형</label>
-          <select
-            id="interviewType"
-            value={values.interviewType}
-            onChange={(e) => handleChange("interviewType", e.target.value)}
-            className={INPUT_CLASS}
-          >
-            {INTERVIEW_TYPE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <span>전체 면접 시간</span>
+          </SelectField>
           <div className="flex gap-2">
-            {DURATION_OPTIONS.map((minutes) => (
-              <Button
-                key={minutes}
-                type="button"
-                variant={values.durationMinutes === minutes ? "default" : "outline"}
-                onClick={() => handleChange("durationMinutes", minutes)}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openEditProfileDialog}
+              disabled={!selectedProfileId}
+            >
+              프로필 수정
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openNewProfileDialog}
+            >
+              새 프로필 등록
+            </Button>
+          </div>
+        </div>
+
+        <SectionDivider />
+
+        <div className="flex flex-col gap-6">
+          <h2 className="text-label font-semibold text-foreground">지원 정보</h2>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="companyName" className={LABEL_CLASS}>
+                기업
+              </label>
+              <input
+                id="companyName"
+                value={values.companyName}
+                onChange={(e) => handleChange("companyName", e.target.value)}
+                placeholder="기업명을 입력하세요"
+                className={FIELD_CLASS}
+              />
+              {errors.companyName && (
+                <p className="text-xs text-destructive">{errors.companyName}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="jobRole" className={LABEL_CLASS}>
+                직무
+              </label>
+              <input
+                id="jobRole"
+                value={values.jobRole}
+                onChange={(e) => handleChange("jobRole", e.target.value)}
+                placeholder="지원 직무를 입력하세요"
+                className={FIELD_CLASS}
+              />
+              {errors.jobRole && (
+                <p className="text-xs text-destructive">{errors.jobRole}</p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="careerYears" className={LABEL_CLASS}>
+                경력
+              </label>
+              <SelectField
+                id="careerYears"
+                value={values.careerYears}
+                onChange={(e) => handleChange("careerYears", e.target.value)}
               >
-                {minutes}분
-              </Button>
-            ))}
+                {CAREER_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+          </div>
+        </div>
+
+        <SectionDivider />
+
+        <div className="flex flex-col gap-6">
+          <h2 className="text-label font-semibold text-foreground">면접 조건</h2>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="interviewType" className={LABEL_CLASS}>
+                면접 유형
+              </label>
+              <SelectField
+                id="interviewType"
+                value={values.interviewType}
+                onChange={(e) => handleChange("interviewType", e.target.value)}
+              >
+                {INTERVIEW_TYPE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className={LABEL_CLASS}>전체 면접 시간</span>
+              <div className="grid grid-cols-4 gap-2">
+                {DURATION_OPTIONS.map((minutes) => (
+                  <button
+                    key={minutes}
+                    type="button"
+                    onClick={() => handleChange("durationMinutes", minutes)}
+                    className={cn(
+                      "h-14 rounded-[12px] border text-sm",
+                      values.durationMinutes === minutes
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-input text-contents-secondary"
+                    )}
+                  >
+                    {minutes}분
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <Button type="submit" disabled={submitStatus === "submitting"}>
-        설정 확인하기
-      </Button>
+      <aside className="h-fit w-80 shrink-0 rounded-[16px] border border-border p-6">
+        <h3 className="text-label font-semibold text-foreground">설정 요약</h3>
+        <div className="mt-4 h-px w-full bg-border" />
+        <dl className="mt-4 flex flex-col">
+          {[
+            ["기업", values.companyName || "-"],
+            ["직무", values.jobRole || "-"],
+            ["경력", values.careerYears],
+            ["유형", values.interviewType],
+            ["시간", `${values.durationMinutes}분`],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
+            >
+              <dt className="text-sm text-contents-tertiary">{label}</dt>
+              <dd className="text-sm text-foreground">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-4 h-px w-full bg-border" />
+        <p className="mt-4 text-xs text-contents-tertiary">
+          시작 전에 마이크 권한과 진행 방식을 확인합니다.
+        </p>
+        <Button
+          type="submit"
+          disabled={submitStatus === "submitting"}
+          className="mt-4 h-14 w-full"
+        >
+          설정 확인하기
+        </Button>
 
-      {submitStatus === "submitting" && <LoadingState message="저장하는 중..." />}
-      {submitStatus === "error" && (
-        <ErrorState message={submitError!} retry={submit} />
-      )}
+        {submitStatus === "submitting" && (
+          <div className="mt-3">
+            <LoadingState message="저장하는 중..." />
+          </div>
+        )}
+        {submitStatus === "error" && (
+          <div className="mt-3">
+            <ErrorState message={submitError!} retry={submit} />
+          </div>
+        )}
+      </aside>
 
       <dialog
         ref={profileDialogRef}
@@ -297,7 +407,7 @@ export function InterviewSetupPage() {
               onChange={(e) =>
                 setProfileDraft((prev) => ({ ...prev, companyName: e.target.value }))
               }
-              className={INPUT_CLASS}
+              className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -308,7 +418,7 @@ export function InterviewSetupPage() {
               onChange={(e) =>
                 setProfileDraft((prev) => ({ ...prev, jobRole: e.target.value }))
               }
-              className={INPUT_CLASS}
+              className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -319,7 +429,7 @@ export function InterviewSetupPage() {
               onChange={(e) =>
                 setProfileDraft((prev) => ({ ...prev, careerYears: e.target.value }))
               }
-              className={INPUT_CLASS}
+              className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
             >
               {CAREER_OPTIONS.map((option) => (
                 <option key={option} value={option}>
