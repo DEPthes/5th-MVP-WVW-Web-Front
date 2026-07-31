@@ -31,10 +31,18 @@ export function QuestionListPage() {
 
       {questionSet && (
         <ul className="flex flex-col gap-3">
-          {questionSet.questions.map((question) => (
+          {questionSet.questions.map((question, index) => (
             <li key={question.id} className="flex items-center justify-between gap-4">
               <span>{question.text}</span>
-              <Link to={`/record/${question.id}/start`} className="shrink-0 underline">
+              <Link
+                to={`/record/${question.id}/start`}
+                state={{
+                  questions: questionSet.questions,
+                  currentIndex: index,
+                  interviewId,
+                }}
+                className="shrink-0 underline"
+              >
                 답변 시작
               </Link>
             </li>
