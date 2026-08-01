@@ -89,10 +89,10 @@ export function HomePage() {
               type="button"
               onClick={() => setFilter("all")}
               className={cn(
-                "h-9 rounded-full border px-4 text-sm",
+                "h-9 rounded-full border px-5 text-sm",
                 filter === "all"
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border text-contents-secondary"
+                  ? "border-primary bg-primary/6 font-semibold text-primary"
+                  : "border-input text-contents-secondary"
               )}
             >
               전체 {sessions.length}건
@@ -101,10 +101,10 @@ export function HomePage() {
               type="button"
               onClick={() => setFilter("completed")}
               className={cn(
-                "h-9 rounded-full border px-4 text-sm",
+                "h-9 rounded-full border px-5 text-sm",
                 filter === "completed"
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border text-contents-secondary"
+                  ? "border-primary bg-primary/6 font-semibold text-primary"
+                  : "border-input text-contents-secondary"
               )}
             >
               완료 {completedCount}건
