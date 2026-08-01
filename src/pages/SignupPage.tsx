@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Footer } from "@/components/Footer"
+import { Header } from "@/components/Header"
 import { LoadingState } from "@/components/LoadingState"
 import { setToken, signup } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -80,9 +81,11 @@ export function SignupPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col p-6">
-      <div className="flex justify-center py-12">
-      <div className="w-full max-w-[480px] rounded-[20px] border border-border bg-card p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06),0_20px_56px_rgba(53,99,233,0.11)]">
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col p-6">
+      <div className="flex justify-center py-11">
+      <div className="w-full max-w-[512px] rounded-[20px] border border-border bg-card p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06),0_20px_56px_rgba(53,99,233,0.11)]">
         <h1 className="text-heading font-bold text-foreground">회원가입</h1>
         <p className="mt-2 text-sm text-contents-tertiary">
           AI 면접 플랫폼에 오신 것을 환영합니다.
@@ -295,7 +298,10 @@ export function SignupPage() {
         </dialog>
       </div>
       </div>
-      <Footer />
+      </div>
+      <div className="mx-auto w-full max-w-2xl px-6">
+        <Footer />
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Footer } from "@/components/Footer"
+import { Header } from "@/components/Header"
 import { LoadingState } from "@/components/LoadingState"
 import { login, setToken } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -18,7 +19,7 @@ const DEFAULT_REDIRECT = "/"
 
 function fieldClass(hasError: boolean) {
   return cn(
-    "h-14 w-full rounded-[12px] border bg-background px-4 text-sm text-foreground placeholder:text-contents-tertiary focus:outline-none focus:ring-2 focus:ring-ring",
+    "h-[58px] w-full rounded-[12px] border bg-background px-4 text-sm text-foreground placeholder:text-contents-tertiary focus:outline-none focus:ring-2 focus:ring-ring",
     hasError ? "border-destructive" : "border-input"
   )
 }
@@ -66,9 +67,11 @@ export function LoginPage() {
   const hasCredentialError = status === "error"
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col p-6">
-      <div className="flex justify-center py-12">
-      <div className="w-full max-w-[440px] rounded-[20px] border border-border bg-card p-10 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06),0_20px_56px_rgba(53,99,233,0.11)]">
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col p-6">
+      <div className="flex justify-center py-11">
+      <div className="w-full max-w-[540px] rounded-[20px] border border-border bg-card p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06),0_20px_56px_rgba(53,99,233,0.11)]">
         <h1 className="text-heading font-bold text-foreground">로그인</h1>
         <p className="mt-2 text-sm text-contents-tertiary">
           AI와 함께 면접을 준비하세요.
@@ -163,7 +166,14 @@ export function LoginPage() {
         </div>
       </div>
       </div>
-      <Footer />
+      </div>
+      <div className="flex h-14 items-center gap-2 border-t border-border bg-[#F9FAFB] px-6 text-xs">
+        <span className="text-contents-tertiary">AI가 분석하고, 질문하고, 평가합니다.</span>
+        <span className="text-contents-secondary">당신의 합격을 설계하세요.</span>
+      </div>
+      <div className="mx-auto w-full max-w-2xl px-6">
+        <Footer />
+      </div>
     </div>
   )
 }
