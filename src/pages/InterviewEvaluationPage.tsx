@@ -51,21 +51,22 @@ export function InterviewEvaluationPage() {
   const evaluation = DEMO_EVALUATION
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-4">
-        <div className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-border bg-muted">
-          <User size={20} className="text-contents-tertiary" />
+    <div className="rounded-[20px] border border-border bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_6px_20px_rgba(0,0,0,0.06),0_16px_40px_rgba(53,99,233,0.08)]">
+      <div className="flex items-center gap-5 border-b border-border px-8 py-6">
+        <div className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-[#C5D4FB] bg-[#F0F4FF]">
+          <User size={19} className="text-primary" />
         </div>
         <div>
-          <p className="text-label font-semibold text-foreground">
+          <p className="text-base font-semibold text-foreground">
             {evaluation.applicantName}
           </p>
-          <p className="text-sm text-contents-tertiary">
+          <p className="text-[13px] text-contents-tertiary">
             {evaluation.companyName}, {evaluation.jobRole}
           </p>
         </div>
       </div>
 
+      <div className="flex flex-col gap-8 px-8 py-8">
       <div>
         <p className="text-xs text-contents-tertiary">종합점수</p>
         <div className="mt-1 flex items-end gap-4">
@@ -138,6 +139,7 @@ export function InterviewEvaluationPage() {
         >
           홈으로 이동
         </Button>
+      </div>
       </div>
     </div>
   )

@@ -29,15 +29,15 @@ export function QuestionReviewPage() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <div className="mx-auto flex w-full max-w-[750px] flex-1 flex-col py-12">
-        <h1 className="text-center text-[32px] font-bold text-foreground">
+        <h1 className="text-[28px] font-bold tracking-[-0.84px] text-foreground">
           질문 다시보기
         </h1>
 
-        <div className="mt-12 rounded-[20px] border border-border bg-card">
+        <div className="mt-5 rounded-[20px] border border-border bg-card">
           <div className="flex flex-col gap-5 border-b border-border p-7">
             <Link
               to={`/sessions/${sessionId}`}
-              className="flex w-fit items-center gap-1 text-sm text-contents-secondary hover:text-foreground"
+              className="flex w-fit items-center gap-2 text-sm text-contents-secondary hover:text-foreground"
             >
               <ChevronLeft size={16} />
               돌아가기
