@@ -2,73 +2,62 @@
 
 > **2026-07-26 방향 전환**: 카메라/MediaPipe 표정 분석, 음성 신호 지표(말속도·떨림 등 정량값), 원본 영상/음성 저장 및 다시듣기를 전부 제외하기로 결정. 답변은 마이크로만 녹음하고, STT 텍스트 + Gemini 텍스트 피드백에 집중하는 구조로 변경. 기존 구현은 `archive/video-facial-pipeline` 브랜치에 보존. 근거: 기획 폴더(`기획/모면완 IA & 기능명세서 (최종)/`)의 "카메라는 MVP 제외", 원본 음성 미저장 정책.
 
+> **2026-08-02~03 대규모 갱신**: Figma 화면설계서 기준으로 전 화면을 다시 구현하고, 실제 백엔드 Swagger 스펙(`AI_Interview_API` 1.0.0)에 맞춰 `src/lib/api.ts`/`src/types.ts`를 전면 재작성했다. 아래 내용은 이 시점 기준으로 다시 정리한 것 — 이전 버전의 "API 대기"/"디자인 대기" 표시 대부분은 이제 해소됨.
+
 ## 완료된 것
 
-- 프로젝트 세팅: Vite + React 19 + TypeScript + Tailwind v4 + shadcn/ui
-- 라우팅: `/login`, `/signup`, `/`(홈=면접 목록), `/interviews/new`(면접 조건 설정), `/questions/:interviewId`, `/record/:questionId/start`(면접 시작 안내), `/record/:questionId`, `/result/:answerId`, `/sessions/:sessionId`(면접 상세, 자리표시자), `/settings`
-- `HomePage`(`/`, 기획서 "홈" 화면설계서 기준 — 홈 자체가 면접 목록 화면) — 전체/완료 건수, 카드 목록(피드백/삭제), 삭제 확인 모달(native `<dialog>`), `listSessions()`/`deleteSession()` 연동. 목록 없으면 빈 상태+CTA. 별도 "히스토리" 메뉴는 기획서 IA에 없어서 제거(2026-07-26)
-- `InterviewStartPage`(`/record/:questionId/start`, 화면설계서 Slide 14/15 기준) — 안내 체크리스트 3항목(환경 확인/자동 녹음 안내/원본 음성 삭제 안내), 마이크 권한 실시간 상태 확인·재확인 버튼, "조건 다시 설정"/"면접 시작하기" 버튼(권한 허용 전 비활성화). "N분 동안 O 면접을 진행합니다" 헤더는 이 라우트에 interviewId가 없어 보류(코드 내 ponytail 주석 참고)
-- `Footer` — 전 화면 공통 노출, 저작권/이용약관·개인정보처리방침(native `<dialog>` 모달)/문의 이메일
-- `src/lib/api.ts` — fetch 래퍼(토큰 첨부, FormData 처리, 에러 핸들링) + 백엔드 엔드포인트별 함수
-- `src/hooks/useAudioRecorder.ts` — 마이크 전용 녹음(카메라 미사용), 시작/종료 버튼 연결, 언마운트 시 트랙/레코더 정리
-- `src/lib/polling.ts` + `src/hooks/usePolling.ts` — 처리상태 폴링 유틸, `ResultPage`에 연결
-- 녹음 → 업로드 → 결과 플로우 연결: `RecordPage`가 `/record/:questionId`로 questionId를 받고, 녹음 종료 후 오디오가 준비되면 `uploadAnswer` 자동 호출 → 성공 시 `/result/:answerId`로 이동, 실패 시 에러 메시지+재시도 버튼
-- `ResultPage`에 종합 피드백(`feedbackText`)과 STT 스크립트(`transcriptText`, "질문다시보기" 자리) 표시
-- 인증 흐름 3종: `src/components/ProtectedRoute.tsx`(비로그인 시 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관), `App.tsx` 네비게이션에 로그인 상태별 로그아웃/로그인 버튼 토글, `apiFetch`가 401 응답 시 토큰 삭제 + `/login` 리다이렉트
-- `LoginPage`/`SignupPage` — 화면설계서 Slide 27/28 기준으로 재확인: 로그인에 "자동 로그인" 체크박스(토큰을 `localStorage`/`sessionStorage` 중 어디에 저장할지만 결정) + 슬로건 문구, 회원가입에 비밀번호 확인 필드 + 아이디/비밀번호 형식 검증(영문+숫자 8-12자 / 영문+숫자+특수기호 8자 이상) + "개인정보 수집 및 이용 동의" 체크박스와 별도 안내 모달로 정정. `src/lib/authValidation.ts` 검증 + `login()`/`signup()` 연동, 성공 시 토큰 저장 후 리다이렉트
-- `QuestionListPage`(`/questions/:interviewId`) — `generateQuestions()` 연동, 질문별 "답변 시작" → `/record/:questionId`
-- `InterviewSetupPage`(`/interviews/new`, 기획서 "면접 조건 설정" 화면 기준) — 지원 프로필 선택/수정/신규등록(native `<dialog>` 모달, `createApplicantProfile`/`updateApplicantProfile` 연동), 기업/직무/경력/면접유형/면접시간(5·10·15·20분) 입력, `src/lib/interviewSetupValidation.ts` 검증 + `createInterviewSetup()` 연동, 성공 시 `/questions/:interviewId` 이동. 기존 "준비자료(자유 텍스트)" 필드는 기획서에 없는 개념이라 제거(2026-07-26)
-- `<LoadingState/>`/`<ErrorState retry=.../>` 공용 컴포넌트로 로딩·에러 UI 통일
-- `SettingsPage`(`/settings`, 기획서 "설정" 화면설계서 기준) — 프로필 수정(닉네임/관심직무, `updateUserProfile()`), 계정관리(로그인 정보 읽기전용, 로그아웃, 비밀번호 변경 `changePassword()`, 탈퇴 확인 모달 `withdrawAccount()`), `src/lib/settingsValidation.ts` 검증
-- Vitest 테스트 (api/polling/interviewSetupValidation/authValidation/settingsValidation 순수 로직)
-- 라이브러리 사용 현황 및 백엔드 전송 데이터 형태: `docs/LIBRARIES_AND_API.md` 참고
+**디자인 시스템**
+- Figma 디자인 토큰(컬러/타이포/Pretendard) 반영, `Button` 컴포넌트(default/outline/destructive/secondary/ghost/link) Figma 스펙대로 재정비
+- 공용 레이아웃: `Header`, `Sidebar`, `AppLayout`, `Footer`
+- 공용 상태 컴포넌트: `<LoadingState/>`, `<ErrorState retry=.../>`, `ReviewQAList`(Q&A 채팅버블, 세션 상세/질문 다시보기 공용)
+
+**라우팅** (`src/App.tsx`)
+- `/login`, `/signup` — 인증 화면 (Header/Sidebar 없음)
+- `/` — 홈(면접 목록), `/interviews/new` — 면접 조건 설정, `/settings` — 설정 (AppLayout 적용)
+- `/questions/new` — 면접 세션 생성 대기(로딩/실패) 화면
+- `/record/:questionId/start` — 시작 전 확인, `/record/:questionId` — 질문 음성재생~녹음~업로드 플로우
+- `/sessions/:sessionId` — 면접 결과(피드백/질문별 다시보기 탭), `/sessions/:sessionId/evaluation` — 면접 종료 직후 평가 화면, `/sessions/:sessionId/review` — 독립 질문 다시보기 화면
+- `*` — 404 (`NotFoundPage`)
+- (`/result/:answerId`는 답변 업로드가 동기 응답으로 바뀌면서 삭제됨 — 폴링 화면 자체가 불필요해짐)
+
+**화면별 구현 (전부 Figma 기준 재구현 + 실제 API 연동 완료)**
+- `LoginPage`/`SignupPage` — 카드 레이아웃, 비밀번호 토글, 필드 검증(`src/lib/authValidation.ts`), `loginId` 기준 로그인/회원가입. 회원가입은 토큰을 안 돌려주므로 성공 시 `/login`으로 이동
+- `HomePage` — 전체/완료 필터, 날짜별 그룹, 카드(피드백/삭제), 삭제 확인 모달
+- `SettingsPage` — 프로필 수정(닉네임/관심 직무 드롭다운), 계정 관리(로그인 정보 읽기전용 — "이메일"이 아니라 "아이디"로 표시, API가 이메일을 안 줌), 비밀번호 변경, 회원탈퇴 확인 모달(Figma 문구/버튼 그대로)
+- `InterviewSetupPage` — 저장된 지원 프로필 불러오기/수정/신규등록(모달), 경력을 `CareerLevel` enum 드롭다운으로 선택, 제출 시 프로필이 없으면 먼저 생성한 뒤 `/questions/new`로 이동
+- `QuestionListPage` — 여기서 실제로 `createInterviewSession()`을 호출(세션 생성 + 질문 세트 발급이 API 한 번에 옴), 로딩/실패 화면
+- `InterviewStartPage` — 체크리스트, 마이크 권한 실시간 상태
+- `RecordPage` — 서버 TTS 오디오 재생 → 녹음 준비(진행률 바) → 녹음(웨이브폼) → 답변 제출(동기 응답, 폴링 없음) → 다음 질문 자동 이동 or 마지막 질문이면 `completeInterview()` 호출 후 평가 화면 이동. 면접 종료 모달도 Figma 기준으로 재작성
+- `InterviewEvaluationPage` — 종합점수/강점/약점 카드, route state로 받은 피드백 우선 사용 + 없으면 `getInterviewDetail`로 보충
+- `SessionDetailPage`/`QuestionReviewPage` — `getInterviewDetail()` 연동, 역량 게이지 5개(사고력/실행력/협업력/성장력/정착력), 질문별 다시보기
+- `NotFoundPage` — 범용 404
+
+**API 레이어** (`src/lib/api.ts`, `src/types.ts`, `src/lib/careerLevels.ts`)
+- 실제 Swagger 스펙(`AI_Interview_API` 1.0.0) 기준으로 전면 재작성 완료
+- accessToken/refreshToken 2종 토큰, 401 시 refreshToken으로 1회 자동 재발급 후 재요청
+- `useAudioRecorder`: `MediaRecorder`(webm) → Web Audio API 캡처 + 수동 WAV 인코딩으로 교체, LINEAR16/16000Hz/모노 스펙 충족
+- Vitest 테스트: api/authValidation/interviewSetupValidation/settingsValidation
 
 ## 남은 작업
 
-각 항목에 블로커 표시: **[지금 가능]** API 명세/디자인 시안 없이 바로 착수 가능 · **[API 대기]** 백엔드 명세 확정 필요(현재 `src/types.ts` 추정 형태로 임시 구현만 가능) · **[디자인 대기]** 시안 나와야 최종 레이아웃/스타일 확정.
+### 1. 백엔드가 아직 스펙을 구현하지 않음 (제일 큰 블로커)
+- 백엔드 레포(https://github.com/DEPthes/5th-MVP-WVW-Server, 로컬 클론: `~/Downloads/5th-MVP-WVW-Server`)는 2026-08-03 확인 기준 빈 Spring Boot 스켈레톤 상태 — 7/16에 로그인+Gemini 연동 코드가 있었으나 7/18 "reset" 커밋으로 전부 되돌려짐
+- 사용자 판단: 프론트에서 먼저 목업 서버를 만들지 않고, 백엔드 팀 구현을 기다리기로 결정(2026-08-03)
+- 백엔드 완성되면: `.env`에 실제 `VITE_API_BASE_URL` 설정, CORS 설정 요청(허용 origin/메서드/Authorization 헤더, preflight OPTIONS는 인증 없이 통과 — 대화 기록 참고) 확인 필요
+- 실제 서버로 전체 흐름(로그인→면접설정→녹음→결과) 종단 테스트는 아직 한 번도 못 해봄
 
-### 1. 인증 흐름
-- [x] 스플래시(기획서 IA #1) — 별도 화면 없이 `ProtectedRoute`의 토큰 유무 분기로 대체. 현재 세션 확인이 로컬 토큰 존재 여부뿐이라 로딩 화면이 필요한 비동기 지연이 없음. 서버 세션 유효성 확인(기능명세서 #1의 "서버 유효성 확인" 단계)이 추가되면 그때 로딩 화면 필요할 수 있음
-- [x] 보호된 라우트 처리 — `ProtectedRoute`가 토큰 없으면 `/login`으로 리다이렉트, `state.from`에 원래 경로 보관(로그인 폼이 나중에 이 값을 읽어 복귀시키면 됨)
-- [x] 로그아웃 동작 (토큰 삭제 + `/login` 이동, `App.tsx` 네비게이션)
-- [x] 401 응답 시 재로그인 유도 처리 — `apiFetch`가 토큰 삭제 + `/login` 리다이렉트
-- [x] 로그인 필드를 기획서 기준(아이디+비밀번호)으로 정정 — `login(userId, password)`, 이메일은 회원가입 시에만 수집(비밀번호 재설정용)
-- [x] `LoginPage` / `SignupPage` 폼 구현 — `src/lib/authValidation.ts` 검증 + `login()`/`signup()` 연동, 토큰 저장, `location.state.from` 있으면 그 경로로 없으면 `/`(홈)로 리다이렉트
-- [x] 화면설계서 Slide 27/28 기준 정정 — 회원가입 비밀번호 확인 필드·아이디/비밀번호 형식 검증·개인정보 동의 UX, 로그인 자동 로그인 체크박스·슬로건
-- [ ] **[디자인 대기]** 두 폼의 최종 레이아웃/스타일 — `기획/화면설계서/` 참고
-- [ ] **미정** 회원가입 완료 후 이동 경로 — 기능명세서 #3은 "초기 프로필 설정" 화면으로 이동한다고 되어 있으나 IA 17개 화면 목록엔 해당 화면이 없음(설정 페이지의 "프로필 수정" 재사용인지, 별도 신설인지 불명). 현재는 `SignupPage`가 홈(`/`)으로 임시 대체 이동(코드 내 ponytail 주석 참고)
+### 2. 의도적으로 미룬 기능 (화면설계서에 없어서 이번 연동 범위에서 제외)
+- 질문별 온디맨드 AI 피드백 (`POST /interviews/{sessionId}/questions/{questionId}/feedback` — 근거/모범답안/꼬리질문). `api.ts`에 함수 자체가 없음
+- 포지션 FIT 3점수(업무경험 유사도/직무이해도/조직적합도) — `OverallFeedback` 타입엔 있지만 화면에 표시 안 함
 
-### 2. 면접 조건 설정 (`InterviewSetupPage`)
-- [x] 지원 프로필(기업/직무/경력) 선택·수정·신규등록 모달, 면접 유형/시간 선택, `src/lib/interviewSetupValidation.ts` 검증 + `createInterviewSetup()`/`createApplicantProfile()`/`updateApplicantProfile()` 연동 — 기획서 화면설계서 Slide 9/10 기준
-- [x] 경력 옵션을 화면설계서 Slide 13("새 프로필 등록" 모달) 기준으로 정정 — 관련 경력/유사 경력/무경력/정규직 경력/계약직·프리랜서 경력/인턴 및 현장실습
-- [ ] **[API 대기]** `listApplicantProfiles()` 연동 — 지금은 이번 세션 동안 등록/수정한 프로필만 select에 표시(새로고침 시 초기화)
-- [ ] **[API 대기]** 실제 필드명/응답 형태는 백엔드 확정 전엔 바뀔 수 있음
-- [ ] **[디자인 대기]** 최종 레이아웃 — 화면설계서 Slide 9/10과 비교해 세부 스타일 맞추기
+### 3. 확인 필요한 것
+- `src/lib/careerLevels.ts`의 `SHALLOW_EXPERIENCE` 한글 라벨("낮은 연관 경력")은 화면설계서에 없던 값이라 임의 지정 — 실제 문구 확정 필요
+- `HomePage` 카드의 "종합 면접 · 10분" 텍스트가 하드코딩 — 목록 API(`InterviewSessionSummary`)가 interviewType/durationMinutes/careerLevel을 안 줘서 실제 값 표시 불가 (상세 API엔 있음)
 
-### 3. 질문 리스트 (`QuestionListPage`)
-- [x] `generateQuestions()` 호출 + 결과 렌더링, 생성 대기 중 로딩 상태, 질문별 "답변 시작" → `/record/:questionId/start` 이동 — 라우트를 `/questions/:interviewId`로 변경(질문 생성에 interviewId 필요)
-- [ ] **[디자인 대기]** 최종 레이아웃
-
-### 4. 면접 목록 (`HomePage`)
-- [x] 카드 목록(전체/완료 건수, 날짜, 상태, 피드백/삭제 버튼), 삭제 확인 모달 — 기획서 화면설계서(홈.png) 기준
-- [ ] **[API 대기]** `listSessions()`/`deleteSession()` 연동 — 지금은 API 대기 중이라 항상 빈 상태로 표시
-- [ ] **[디자인 대기]** 최종 레이아웃
-
-### 5. 디자인 반영
-- [ ] **[디자인 대기]** 전 화면 현재 자리표시자 수준 — 시안 나오는 대로 Tailwind/shadcn으로 실제 레이아웃 적용
-- [x] 로딩/에러 상태를 `<LoadingState/>`, `<ErrorState retry=.../>` 공용 컴포넌트로 통일(RecordPage/ResultPage/QuestionListPage/InterviewSetupPage 적용) — 디자인 나오면 이 두 컴포넌트만 재스타일링하면 됨
-
-### 6. 기타
-- [ ] **[API 대기]** `.env` 실제 배포용 `VITE_API_BASE_URL` 설정 (현재 `.env.example`만 존재, 실제 서버 주소 필요)
-- [x] 반응형 대응 범위 결정 — 데스크톱 우선 지원, 모바일 대응은 보류
-- [x] 홈 화면 뼈대(`HomePage`, 빈 상태+CTA), 공통 푸터(`Footer`), 면접 시작 안내(`InterviewStartPage`, 마이크 권한) 구현
-- [x] 지원 프로필(기업·직무·경력 선택·수정·신규등록)/면접 유형·시간 선택 — `InterviewSetupPage`로 구현
-- [x] 설정(프로필 수정·계정관리: 로그아웃/비밀번호변경/탈퇴 확인 모달) — `SettingsPage`로 구현. `getUserProfile()`/`updateUserProfile()`/`changePassword()`/`withdrawAccount()`는 아직 API 대기, 실패해도 폼은 그대로 사용 가능
-- [x] `SessionDetailPage`(`/sessions/:sessionId`) — 자리표시자만 존재. 실제 내용(홈2/홈3.png: 피드백 탭 — 종합점수/사고력·실행력·협업력·성장력 breakdown, 질문다시보기 탭)은 아래 세션 단위 종합 피드백 데이터 모델 결정 이후 구현
-- [x] `InterviewStartPage` 체크리스트/마이크 실시간 상태 확인 — 화면설계서 Slide 14/15 기준으로 정정(백엔드·디자인 의존 없이 지금 가능한 부분이라 아래 보류 항목에서 분리해 먼저 반영, 2026-07-26)
-- [ ] **[API 대기, 설계 보류]** 면접 종료 확인 모달, 하나의 세션에서 여러 질문 순차 진행 + 전체 타이머, 세션 단위 종합 피드백 데이터 모델(종합점수·사고력·실행력·협업력·성장력, `PracticeSession`에 필드 없음) — 2026-07-26에 백엔드 세션/TTS/STT/Gemini API가 확정되기 전까지 설계를 보류하기로 결정(사용자 판단: 지금은 백엔드·디자인이 필요 없는 작업만 진행). API 확정되면 브레인스토밍부터 다시 시작
-  - 참고용 화면설계서 매핑(그때 다시 열어볼 것): Slide 16=세션 생성 중, Slide 17=세션 생성 실패, Slide 18=질문 재생·녹음 대기, Slide 19=녹음 중, Slide 20=STT 변환 중, Slide 21=STT 변환 실패, Slide 22=다음 질문 준비, Slide 23=시간 초과, Slide 24=면접 종료 확인 모달(정확한 카피 포함), Slide 25=분석 중, 모달FULL/피드백01~03=종합 피드백 모달 데이터 모델과 질문다시보기 온디맨드 토글 UX
+### 4. 기타
+- 반응형: 데스크톱 전용으로 확정, 모바일 대응은 범위 밖
 
 ## 참고
-- 백엔드 계약: `src/types.ts`의 도메인 타입과 `docs/superpowers/specs/2026-07-11-interview-lab-design.md`(별도 저장소 `depth`) 기준
-- 로드맵 원본: `depth` 저장소의 `docs/superpowers/plans/2026-07-11-interview-lab-roadmap.md`
+- 실제 백엔드 API 스펙: https://app.swaggerhub.com/apis/uni-62b/AI_Interview_API/1.0.0
+- 데이터 계약(현재 소스 오브 트루스): `src/types.ts`, `src/lib/api.ts`, `src/lib/careerLevels.ts`
+- 백엔드 레포: https://github.com/DEPthes/5th-MVP-WVW-Server
