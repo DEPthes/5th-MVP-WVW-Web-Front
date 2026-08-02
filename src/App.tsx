@@ -11,6 +11,7 @@ import { SessionDetailPage } from '@/pages/SessionDetailPage'
 import { QuestionReviewPage } from '@/pages/QuestionReviewPage'
 import { InterviewEvaluationPage } from '@/pages/InterviewEvaluationPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/AppLayout'
 import { clearToken } from '@/lib/api'
@@ -117,6 +118,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }
