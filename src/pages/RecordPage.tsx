@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
-import { Headphones, Volume2 } from "lucide-react"
+import { AlertTriangle, Headphones, Volume2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/Header"
 import { ErrorState } from "@/components/ErrorState"
@@ -11,6 +11,30 @@ function formatElapsed(seconds: number) {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+}
+
+const PREPARE_MS = 2000
+
+// ponytail: 실제 마이크 입력을 분석하는 스펙트럼 아닌, 녹음 중임을 보여주는
+// 장식용 CSS 애니메이션 바. 실시간 음량 반응 웨이브폼이 필요해지면
+// AnalyserNode로 stream을 분석해 막대 높이를 계산하도록 교체한다.
+function Waveform() {
+  const bars = 46
+  return (
+    <div className="flex h-[90px] w-full items-center justify-center gap-[3px]">
+      {Array.from({ length: bars }).map((_, i) => (
+        <span
+          key={i}
+          className="w-[3px] shrink-0 animate-pulse rounded-full bg-primary"
+          style={{
+            height: `${18 + Math.abs(Math.sin(i * 0.7)) * 60}%`,
+            animationDelay: `${(i % 8) * 90}ms`,
+            animationDuration: "900ms",
+          }}
+        />
+      ))}
+    </div>
+  )
 }
 
 type RecordNavState = {
@@ -44,6 +68,8 @@ function RecordPageInner() {
   )
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [isPreparing, setIsPreparing] = useState(false)
+  const [prepareFilled, setPrepareFilled] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const intentRef = useRef<"finish" | "restart" | null>(null)
   const endDialogRef = useRef<HTMLDialogElement>(null)
@@ -65,9 +91,19 @@ function RecordPageInner() {
   }, [questionText])
 
   useEffect(() => {
-    if (isSpeaking) return
-    if (status === "idle") start()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 음성 재생이 끝나면 자동 녹음 시작
+    if (isSpeaking || status !== "idle") return
+    setIsPreparing(true)
+    setPrepareFilled(false)
+    const raf = requestAnimationFrame(() => setPrepareFilled(true))
+    const timeout = setTimeout(() => {
+      setIsPreparing(false)
+      start()
+    }, PREPARE_MS)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(timeout)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 음성 재생이 끝나면 짧은 준비 후 자동 녹음 시작
   }, [isSpeaking])
 
   useEffect(() => {
@@ -149,7 +185,7 @@ function RecordPageInner() {
         right={
           <Button
             variant="destructive"
-            size="sm"
+            className="h-10 rounded-[10px] px-5"
             onClick={() => endDialogRef.current?.showModal()}
           >
             면접 종료
@@ -180,6 +216,32 @@ function RecordPageInner() {
               </div>
             </div>
           </>
+        ) : isPreparing ? (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="size-3 rounded-full bg-info/80" />
+              <span className="text-2xl font-semibold text-info">
+                {questionNumber ? `질문 ${questionNumber} ` : ""}녹음 준비
+              </span>
+            </div>
+            <div className="flex w-full flex-col items-center gap-12 rounded-[12px] border border-[#BAE6FD] bg-[#F0FAFF] px-7 py-10">
+              <div className="h-8 w-full overflow-hidden rounded-full bg-[#DBE9F3]">
+                <div
+                  className="h-8 rounded-full bg-primary transition-[width] ease-linear"
+                  style={{
+                    width: prepareFilled ? "100%" : "0%",
+                    transitionDuration: `${PREPARE_MS}ms`,
+                  }}
+                />
+              </div>
+              <div className="flex flex-col items-center gap-3 text-center">
+                <p className="text-label font-bold text-info">
+                  잠시 후 답변 녹음이 자동으로 시작합니다.
+                </p>
+                <p className="text-sm text-[#7DD3FC]">답변을 준비해 주세요.</p>
+              </div>
+            </div>
+          </>
         ) : (
           <>
             <div className="flex items-center gap-2">
@@ -192,9 +254,13 @@ function RecordPageInner() {
 
             <div className="flex w-full flex-col items-center gap-7 rounded-[16px] border border-[#E8EAF0] bg-card px-9 pb-7 pt-10 shadow-[0_4px_6px_rgba(0,0,0,0.06)]">
               <div className="flex flex-col items-center gap-5 border-b border-border pb-5 text-center">
-                <p className="text-2xl font-semibold text-foreground">
-                  {questionText ?? "질문 정보를 불러올 수 없습니다."}
-                </p>
+                {isRecording ? (
+                  <Waveform />
+                ) : (
+                  <p className="text-2xl font-semibold text-foreground">
+                    {questionText ?? "질문 정보를 불러올 수 없습니다."}
+                  </p>
+                )}
               </div>
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -213,7 +279,11 @@ function RecordPageInner() {
                     {isSpeaking ? "질문 음성 재생 중" : "답변 녹음 중"}
                   </span>
                 </div>
-                <Button variant="outline" size="sm" onClick={speakQuestion}>
+                <Button
+                  variant="outline"
+                  className="h-10 gap-1 rounded-[10px] border-secondary px-5 text-primary"
+                  onClick={speakQuestion}
+                >
                   <Headphones size={16} />
                   질문 다시 듣기
                 </Button>
@@ -239,14 +309,14 @@ function RecordPageInner() {
         <div className="flex w-full justify-center gap-9">
           <Button
             variant="outline"
-            className="h-[54px] w-full max-w-[440px]"
+            className="h-[54px] w-full max-w-[440px] rounded-[10px] border-secondary text-primary"
             onClick={handleRestart}
             disabled={!isRecording || uploadStatus === "uploading"}
           >
             녹음 다시 시작
           </Button>
           <Button
-            className="h-[54px] w-full max-w-[440px] text-label"
+            className="h-[54px] w-full max-w-[440px] text-[15px]"
             onClick={handleFinish}
             disabled={!isRecording || uploadStatus === "uploading"}
           >
@@ -267,22 +337,34 @@ function RecordPageInner() {
 
       <dialog
         ref={endDialogRef}
-        className="rounded-lg border border-border p-4 backdrop:bg-black/50"
+        className="w-[440px] rounded-[16px] border border-border p-6 backdrop:bg-black/50"
       >
-        <p className="text-sm font-medium">정말 면접을 종료하시겠습니까?</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          지금까지의 답변은 저장되지만, 남은 질문은 답변할 수 없습니다.
-        </p>
-        <div className="mt-3 flex gap-2">
+        <p className="text-[22px] font-bold text-foreground">면접을 종료할까요?</p>
+        <div className="mt-2 flex flex-col gap-1 text-sm text-contents-secondary">
+          <p>현재 녹음을 종료하고 답변을 텍스트로 변환합니다.</p>
+          <p>지금까지 저장된 답변만 분석됩니다.</p>
+        </div>
+        <div className="mt-3 flex items-start gap-2.5 rounded-[14px] border border-warning/30 bg-warning/6 px-5 py-[18px]">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-warning" />
+          <p className="text-sm font-bold text-warning">
+            종료 후 다시 면접을 이어서 진행할 수 없습니다.
+          </p>
+        </div>
+        <div className="mt-7 flex justify-end gap-3">
           <Button
             type="button"
             variant="outline"
+            className="h-10 rounded-[10px] text-[15px] font-semibold"
             onClick={() => endDialogRef.current?.close()}
           >
-            취소
+            계속 진행하기
           </Button>
-          <Button type="button" variant="destructive" onClick={confirmEndInterview}>
-            면접 종료
+          <Button
+            type="button"
+            className="h-10 rounded-[10px] text-[15px] font-semibold"
+            onClick={confirmEndInterview}
+          >
+            면접 종료하기
           </Button>
         </div>
       </dialog>
