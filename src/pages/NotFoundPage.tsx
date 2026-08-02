@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import { Home } from "lucide-react"
-import { buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button-variants"
 import { cn } from "@/lib/utils"
 
 export function NotFoundPage() {

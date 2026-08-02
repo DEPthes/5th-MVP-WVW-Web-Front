@@ -123,9 +123,11 @@ export function SessionDetailPage() {
         <h2 className="text-label font-semibold text-foreground">면접 결과</h2>
         <div className="mt-5 h-px w-full bg-border" />
 
-        <div className="mt-6 flex h-[37px] gap-1 border-b border-border">
+        <div role="tablist" className="mt-6 flex h-[37px] gap-1 border-b border-border">
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === "feedback"}
             onClick={() => setTab("feedback")}
             className={cn(
               "border-b-2 px-1 pb-3.5 text-sm",
@@ -138,6 +140,8 @@ export function SessionDetailPage() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === "review"}
             onClick={() => setTab("review")}
             className={cn(
               "border-b-2 px-1 pb-3.5 text-sm",

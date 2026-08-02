@@ -117,7 +117,12 @@ export function useAudioRecorder() {
 
     const frames = framesRef.current
     framesRef.current = []
-    if (frames.length === 0) return
+    if (frames.length === 0) {
+      // 프레임이 하나도 안 쌓였어도(아주 짧게 녹음 후 바로 stop) status는
+      // "stopped"로 넘겨야 한다. 안 그러면 recording에 상태가 멈춰 UI가 갇힌다.
+      setStatus("stopped")
+      return
+    }
 
     const totalLength = frames.reduce((sum, frame) => sum + frame.length, 0)
     const merged = new Float32Array(totalLength)

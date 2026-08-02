@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ErrorState } from "@/components/ErrorState"
 import { cn } from "@/lib/utils"
 import { deleteInterviewSession, listInterviewSessions } from "@/lib/api"
 import type { InterviewSessionSummary } from "@/types"
@@ -31,14 +32,19 @@ export function HomePage() {
   const [sessions, setSessions] = useState<InterviewSessionSummary[]>([])
   const [filter, setFilter] = useState<"all" | "completed">("all")
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
-  useEffect(() => {
-    // ponytail: listInterviewSessions() 실패해도 빈 목록으로 진행
+  function loadSessions() {
+    setLoadError(null)
     listInterviewSessions()
       .then(setSessions)
-      .catch(() => {})
-  }, [])
+      .catch((err) =>
+        setLoadError(err instanceof Error ? err.message : "면접 목록을 불러오지 못했습니다.")
+      )
+  }
+
+  useEffect(loadSessions, [])
 
   function openDeleteDialog(id: number) {
     setDeleteTargetId(id)
@@ -73,7 +79,9 @@ export function HomePage() {
         </p>
       </div>
 
-      {sessions.length === 0 ? (
+      {loadError ? (
+        <ErrorState message={loadError} retry={loadSessions} />
+      ) : sessions.length === 0 ? (
         <div className="flex flex-col gap-3">
           <p className="text-sm text-contents-tertiary">
             아직 진행한 모의면접이 없습니다. 첫 모의면접을 시작해보세요.
@@ -87,6 +95,7 @@ export function HomePage() {
           <div className="flex gap-2">
             <button
               type="button"
+              aria-pressed={filter === "all"}
               onClick={() => setFilter("all")}
               className={cn(
                 "h-9 rounded-full border px-5 text-sm",
@@ -99,6 +108,7 @@ export function HomePage() {
             </button>
             <button
               type="button"
+              aria-pressed={filter === "completed"}
               onClick={() => setFilter("completed")}
               className={cn(
                 "h-9 rounded-full border px-5 text-sm",

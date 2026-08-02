@@ -33,6 +33,7 @@ export function InterviewStartPage() {
     questions?: { id: string; text: string }[]
     currentIndex?: number
     interviewId?: string
+    durationMinutes?: number
   } | null
   const [micStatus, setMicStatus] = useState<MicStatus>("checking")
 

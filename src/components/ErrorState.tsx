@@ -8,7 +8,7 @@ export function ErrorState({
   retry?: () => void
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div role="alert" className="flex items-center gap-2">
       <p className="text-sm text-destructive">{message}</p>
       {retry && (
         <Button variant="outline" onClick={retry}>

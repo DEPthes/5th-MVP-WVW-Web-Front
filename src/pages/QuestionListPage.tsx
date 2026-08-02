@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Clock, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,10 @@ export function QuestionListPage() {
   const { applicationProfileId, interviewType, durationMinutes } =
     (location.state as SetupNavState | null) ?? {}
   const [error, setError] = useState<string | null>(null)
+  // StrictMode 이중 실행이나 컴포넌트 재마운트로 effect가 다시 돌아도
+  // 세션 생성은 최초 1회만 나가도록 막는다. "다시 시도" 버튼은 이 ref와
+  // 무관하게 load()를 직접 호출하므로 정상 동작한다.
+  const startedRef = useRef(false)
 
   function load() {
     if (!applicationProfileId || !interviewType || !durationMinutes) {
@@ -49,6 +53,7 @@ export function QuestionListPage() {
             })),
             currentIndex: 0,
             interviewId: String(session.sessionId),
+            durationMinutes,
           },
         })
       })
@@ -57,7 +62,12 @@ export function QuestionListPage() {
       )
   }
 
-  useEffect(load, [applicationProfileId, interviewType, durationMinutes])
+  useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 최초 1회만 실행
+  }, [applicationProfileId, interviewType, durationMinutes])
 
   return (
     <div className="flex min-h-screen flex-col">

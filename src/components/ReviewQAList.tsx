@@ -20,9 +20,21 @@ export function ReviewQAList({
         <div
           key={index}
           onClick={onSelect ? () => onSelect(index) : undefined}
+          role={onSelect ? "button" : undefined}
+          tabIndex={onSelect ? 0 : undefined}
+          onKeyDown={
+            onSelect
+              ? (e) => {
+                  if (e.key !== "Enter" && e.key !== " ") return
+                  e.preventDefault()
+                  onSelect(index)
+                }
+              : undefined
+          }
           className={cn(
             "flex flex-col gap-4 pb-8",
-            onSelect && "cursor-pointer",
+            onSelect &&
+              "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
             index < reviews.length - 1 && "mb-8 border-b border-border"
           )}
         >

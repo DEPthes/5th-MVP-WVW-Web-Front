@@ -1,16 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource/pretendard/300.css";
-@import "@fontsource/pretendard/400.css";
-@import "@fontsource/pretendard/600.css";
-@import "@fontsource/pretendard/700.css";
+/* @fontsource/pretendard는 라틴 서브셋만 포함해 한글이 시스템 폰트로 대체되던 문제가 있었다.
+   가변 폰트 하나(2MB, 전체 굵기+한글 포함)로 교체해 문제도 고치고 용량도 줄인다. */
+@import "pretendard/dist/web/variable/pretendardvariable.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Pretendard', sans-serif;
+    --font-sans: 'Pretendard Variable', sans-serif;
     --text-heading: 2.5rem;
     --text-label: 1.25rem;
     --text-body: 0.875rem;

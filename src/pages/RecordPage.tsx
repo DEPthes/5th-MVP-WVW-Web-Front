@@ -41,6 +41,46 @@ type RecordNavState = {
   questions?: { id: string; text: string }[]
   currentIndex?: number
   interviewId?: string
+  durationMinutes?: number
+}
+
+// 새로고침으로 location.state가 날아가는 걸 막는 임시 완화책.
+// 진행 중 세션을 서버에서 다시 조회하는 API가 아직 없어(getInterviewDetail은
+// 완료된 세션 전용) 같은 탭 새로고침만 세션스토리지로 복구한다.
+const RECORD_STATE_KEY = "moamyeonwan_record_state"
+const INTERVIEW_STARTED_KEY = "moamyeonwan_interview_started_at"
+
+function readStoredRecordState(): RecordNavState | null {
+  try {
+    const raw = sessionStorage.getItem(RECORD_STATE_KEY)
+    return raw ? (JSON.parse(raw) as RecordNavState) : null
+  } catch {
+    return null
+  }
+}
+
+function storeRecordState(state: RecordNavState) {
+  sessionStorage.setItem(RECORD_STATE_KEY, JSON.stringify(state))
+}
+
+// 질문이 바뀌어도(컴포넌트 재마운트) 같은 면접의 시작 시각은 유지하고,
+// 다른 interviewId면(새 면접) 새로 시작 시각을 잡는다.
+function getOrInitInterviewStart(interviewId: string): number {
+  try {
+    const raw = sessionStorage.getItem(INTERVIEW_STARTED_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as { interviewId: string; startedAt: number }
+      if (parsed.interviewId === interviewId) return parsed.startedAt
+    }
+  } catch {
+    // 손상된 값은 무시하고 새로 시작
+  }
+  const startedAt = Date.now()
+  sessionStorage.setItem(
+    INTERVIEW_STARTED_KEY,
+    JSON.stringify({ interviewId, startedAt })
+  )
+  return startedAt
 }
 
 export function RecordPage() {
@@ -56,8 +96,15 @@ function RecordPageInner() {
   const { questionId } = useParams<{ questionId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
-  const { questions, currentIndex, interviewId } =
-    (location.state as RecordNavState | null) ?? {}
+  const { questions, currentIndex, interviewId, durationMinutes } =
+    (location.state as RecordNavState | null) ?? readStoredRecordState() ?? {}
+
+  useEffect(() => {
+    if (questions && currentIndex !== undefined && interviewId) {
+      storeRecordState({ questions, currentIndex, interviewId, durationMinutes })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 값이 갖춰질 때만 저장
+  }, [questions, currentIndex, interviewId, durationMinutes])
 
   const questionText =
     currentIndex !== undefined ? questions?.[currentIndex]?.text : undefined
@@ -70,8 +117,14 @@ function RecordPageInner() {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [isPreparing, setIsPreparing] = useState(false)
   const [prepareFilled, setPrepareFilled] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
-  const intentRef = useRef<"finish" | "restart" | null>(null)
+  const [interviewStartedAt] = useState(() =>
+    interviewId ? getOrInitInterviewStart(interviewId) : Date.now()
+  )
+  const [totalElapsed, setTotalElapsed] = useState(() =>
+    Math.floor((Date.now() - interviewStartedAt) / 1000)
+  )
+  const timeUpRef = useRef(false)
+  const intentRef = useRef<"finish" | "restart" | "end" | null>(null)
   const endDialogRef = useRef<HTMLDialogElement>(null)
   const questionAudioRef = useRef<HTMLAudioElement | null>(null)
   const [endStatus, setEndStatus] = useState<"idle" | "ending" | "error">("idle")
@@ -79,6 +132,9 @@ function RecordPageInner() {
 
   function speakQuestion() {
     if (!interviewId || !questionId) return
+    // 오디오 요청 시작 시점부터 isSpeaking을 true로 잡아, 준비 effect가
+    // 재생 시작 전에(요청이 늦게 오는 동안) 녹음을 먼저 시작해버리는 경쟁을 막는다.
+    setIsSpeaking(true)
     getQuestionAudio(Number(interviewId), Number(questionId))
       .then(({ audioUrl }) => {
         const audio = questionAudioRef.current ?? new Audio()
@@ -87,7 +143,7 @@ function RecordPageInner() {
         audio.onplay = () => setIsSpeaking(true)
         audio.onended = () => setIsSpeaking(false)
         audio.onerror = () => setIsSpeaking(false)
-        void audio.play()
+        void audio.play().catch(() => setIsSpeaking(false))
       })
       .catch(() => setIsSpeaking(false))
   }
@@ -114,15 +170,48 @@ function RecordPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 음성 재생이 끝나면 짧은 준비 후 자동 녹음 시작
   }, [isSpeaking])
 
+  // 전체 면접 시간: 질문이 바뀌어도(재마운트) interviewStartedAt은 유지되므로
+  // 계속 누적된다. 질문별 녹음 시간과는 별개.
   useEffect(() => {
-    if (status !== "recording") return
-    const startedAt = Date.now()
-    setElapsed(0)
     const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startedAt) / 1000))
+      setTotalElapsed(Math.floor((Date.now() - interviewStartedAt) / 1000))
     }, 1000)
     return () => clearInterval(interval)
-  }, [status])
+  }, [interviewStartedAt])
+
+  function autoEndInterview() {
+    if (!interviewId) return
+    if (status === "recording") {
+      // 현재 답변도 저장하도록 stop → (audioBlob effect가) 업로드 → 종료 순으로 흘러간다.
+      intentRef.current = "end"
+      stop()
+      return
+    }
+    setUploadStatus("uploading")
+    setUploadError(null)
+    completeInterview(Number(interviewId))
+      .then((feedback) => {
+        sessionStorage.removeItem(RECORD_STATE_KEY)
+        navigate(`/sessions/${interviewId}/evaluation`, { state: { feedback } })
+      })
+      .catch((err) => {
+        setUploadStatus("error")
+        setUploadError(
+          err instanceof Error ? err.message : "면접 결과를 생성하지 못했습니다."
+        )
+      })
+  }
+
+  // 전체 면접 제한 시간(durationMinutes) 도달 시 자동 종료. 이미 업로드가
+  // 진행 중이면 그 결과가 자연스럽게 다음/종료로 이어지므로 건너뛴다.
+  useEffect(() => {
+    if (!durationMinutes || timeUpRef.current) return
+    if (totalElapsed < durationMinutes * 60) return
+    if (uploadStatus === "uploading") return
+    timeUpRef.current = true
+    autoEndInterview()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 기한에 처음 도달한 순간만 트리거
+  }, [totalElapsed, durationMinutes, uploadStatus])
 
   function goToNextQuestionOrFinish() {
     const nextIndex = currentIndex !== undefined ? currentIndex + 1 : undefined
@@ -131,11 +220,17 @@ function RecordPageInner() {
 
     if (nextQuestion) {
       navigate(`/record/${nextQuestion.id}`, {
-        state: { questions, currentIndex: nextIndex, interviewId } satisfies RecordNavState,
+        state: {
+          questions,
+          currentIndex: nextIndex,
+          interviewId,
+          durationMinutes,
+        } satisfies RecordNavState,
       })
     } else if (interviewId) {
       completeInterview(Number(interviewId))
         .then((feedback) => {
+          sessionStorage.removeItem(RECORD_STATE_KEY)
           navigate(`/sessions/${interviewId}/evaluation`, { state: { feedback } })
         })
         .catch((err) => {
@@ -149,27 +244,42 @@ function RecordPageInner() {
     }
   }
 
+  // "면접 종료"를 누른 시점의 답변도 마저 저장하도록, 업로드가 끝난 뒤에야
+  // completeInterview를 부른다. intentRef는 업로드+종료 처리가 모두 성공할
+  // 때까지 "end"로 남아있어, 실패 후 재시도 시 같은 흐름을 다시 탄다.
+  // ponytail: completeInterview만 실패하는 드문 경우 재시도가 답변을 한 번
+  // 더 재전송한다(중복 제출). 서버가 같은 질문 재제출을 덮어쓴다는 전제.
   function runUpload(blob: Blob) {
     setUploadStatus("uploading")
     setUploadError(null)
     submitAnswer(Number(interviewId), Number(questionId), blob)
       .then(() => {
+        if (intentRef.current === "end") {
+          return completeInterview(Number(interviewId)).then((feedback) => {
+            intentRef.current = null
+            sessionStorage.removeItem(RECORD_STATE_KEY)
+            navigate(`/sessions/${interviewId}/evaluation`, { state: { feedback } })
+          })
+        }
+        intentRef.current = null
         goToNextQuestionOrFinish()
       })
       .catch((err) => {
         setUploadStatus("error")
-        setUploadError(err instanceof Error ? err.message : "업로드에 실패했습니다.")
+        setUploadError(
+          err instanceof Error ? err.message : "답변 처리에 실패했습니다."
+        )
       })
   }
 
   useEffect(() => {
     if (!audioBlob || !intentRef.current) return
-    if (intentRef.current === "finish") {
-      runUpload(audioBlob)
-    } else {
+    if (intentRef.current === "restart") {
+      intentRef.current = null
       start()
+      return
     }
-    intentRef.current = null
+    runUpload(audioBlob)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- audioBlob 준비 시점에만 트리거
   }, [audioBlob])
 
@@ -194,10 +304,20 @@ function RecordPageInner() {
       navigate("/")
       return
     }
+    if (isRecording) {
+      // 녹음 중이면 stop()으로 현재 답변을 확정한 뒤, audioBlob effect가
+      // intentRef === "end"를 보고 업로드 → completeInterview 순으로 이어간다.
+      // 이후 진행 상황/오류는 페이지의 기존 uploadStatus 배너(재시도 포함)로 보여준다.
+      intentRef.current = "end"
+      endDialogRef.current?.close()
+      stop()
+      return
+    }
     setEndStatus("ending")
     setEndError(null)
     completeInterview(Number(interviewId))
       .then((feedback) => {
+        sessionStorage.removeItem(RECORD_STATE_KEY)
         endDialogRef.current?.close()
         navigate(`/sessions/${interviewId}/evaluation`, { state: { feedback } })
       })
@@ -331,7 +451,7 @@ function RecordPageInner() {
               전체 면접 시간
             </span>
             <span className="text-[32px] font-bold tracking-[0.48px] text-foreground">
-              {formatElapsed(elapsed)}
+              {formatElapsed(totalElapsed)}
             </span>
           </div>
           <p className="text-sm text-contents-tertiary">
@@ -363,6 +483,7 @@ function RecordPageInner() {
             message={uploadError!}
             retry={() => {
               if (audioBlob) runUpload(audioBlob)
+              else if (timeUpRef.current) autoEndInterview()
             }}
           />
         )}

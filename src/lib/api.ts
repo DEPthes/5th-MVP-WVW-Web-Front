@@ -137,6 +137,11 @@ export function logout() {
   return apiFetch<void>("/auth/logout", { method: "POST" }).catch(() => {})
 }
 
+// 헤더/설정 화면 등 모든 로그아웃 진입점이 서버 refresh-token 무효화를 거치도록 공유.
+export function logoutAndClearToken() {
+  return logout().finally(clearToken)
+}
+
 export function listApplicationProfiles() {
   return apiFetch<ApplicationProfile[]>("/application-profiles")
 }

@@ -9,7 +9,7 @@ import {
   changePassword,
   clearToken,
   getUserProfile,
-  logout,
+  logoutAndClearToken,
   updateUserProfile,
   withdrawAccount,
 } from "@/lib/api"
@@ -59,16 +59,23 @@ export function SettingsPage() {
     "idle" | "submitting" | "error" | "saved"
   >("idle")
   const [profileError, setProfileError] = useState<string | null>(null)
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // ponytail: getUserProfile() API 대기 중 — 실패해도 빈 폼으로 계속 진행
+  function loadProfile() {
+    setProfileLoadError(null)
     getUserProfile()
       .then((data) => {
         setLoginId(data.loginId)
         setProfile({ nickname: data.nickname, desiredPosition: data.desiredPosition })
       })
-      .catch(() => {})
-  }, [])
+      .catch((err) =>
+        setProfileLoadError(
+          err instanceof Error ? err.message : "프로필을 불러오지 못했습니다."
+        )
+      )
+  }
+
+  useEffect(loadProfile, [])
 
   function handleProfileChange(field: keyof ProfileValues, value: string) {
     setProfile((prev) => ({ ...prev, [field]: value }))
@@ -142,10 +149,7 @@ export function SettingsPage() {
   }
 
   function handleLogout() {
-    logout().finally(() => {
-      clearToken()
-      navigate("/login")
-    })
+    logoutAndClearToken().finally(() => navigate("/login"))
   }
 
   const withdrawDialogRef = useRef<HTMLDialogElement>(null)
@@ -204,6 +208,12 @@ export function SettingsPage() {
         <p className="mt-1.5 text-sm text-contents-tertiary">
           지원하고자 하는 직무를 선택하고 프로필을 설정할 수 있습니다.
         </p>
+
+        {profileLoadError && (
+          <div className="mt-4">
+            <ErrorState message={profileLoadError} retry={loadProfile} />
+          </div>
+        )}
 
         <div className="mt-6 flex items-start gap-7">
           <div className="flex size-[88px] shrink-0 items-center justify-center rounded-full border-2 border-[#C5D4FB] bg-[#F0F4FF]">

@@ -107,6 +107,36 @@ describe("apiFetch", () => {
     expect(getAccessToken()).toBe("new-access")
   })
 
+  it("dedupes concurrent 401s into a single reissue call", async () => {
+    setTokens("expired-access", "refresh-token")
+    let reissueCalls = 0
+    let profileCalls = 0
+    globalThis.fetch = vi.fn(async (url) => {
+      if (typeof url === "string" && url.includes("/auth/reissue")) {
+        reissueCalls++
+        return new Response(
+          JSON.stringify({ accessToken: "new-access", refreshToken: "new-refresh" }),
+          { status: 200 }
+        )
+      }
+      profileCalls++
+      // 두 요청의 최초 시도(1, 2번째)는 401, 재발급 후 재시도는 성공.
+      if (profileCalls <= 2) {
+        return new Response("unauthorized", { status: 401 })
+      }
+      return new Response(
+        JSON.stringify({ id: 1, loginId: "u", nickname: "n", desiredPosition: "p" }),
+        { status: 200 }
+      )
+    }) as typeof fetch
+
+    const [a, b] = await Promise.all([getUserProfile(), getUserProfile()])
+
+    expect(a.loginId).toBe("u")
+    expect(b.loginId).toBe("u")
+    expect(reissueCalls).toBe(1)
+  })
+
   it("clears the token and redirects to /login when reissue fails on a 401", async () => {
     setTokens("expired-access", "refresh-token")
     globalThis.fetch = vi.fn(
