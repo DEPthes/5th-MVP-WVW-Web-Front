@@ -1,54 +1,80 @@
 import { useEffect, useState } from "react"
-import { Link, useParams } from "react-router-dom"
-import { ErrorState } from "@/components/ErrorState"
-import { LoadingState } from "@/components/LoadingState"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
+import { Clock, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Header } from "@/components/Header"
 import { generateQuestions } from "@/lib/api"
-import type { QuestionSet } from "@/types"
+
+function DurationBadge({ minutes }: { minutes?: number }) {
+  if (!minutes) return null
+  return (
+    <div className="flex items-center gap-2 rounded-[10px] border border-[#C5D4FB] bg-[#F0F4FF] px-4 py-1.5">
+      <Clock size={16} className="text-primary" />
+      <span className="text-lg font-bold tracking-[0.72px] text-primary">
+        {String(minutes).padStart(2, "0")}:00
+      </span>
+    </div>
+  )
+}
 
 export function QuestionListPage() {
   const { interviewId } = useParams<{ interviewId: string }>()
-  const [questionSet, setQuestionSet] = useState<QuestionSet | null>(null)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { durationMinutes } =
+    (location.state as { durationMinutes?: number } | null) ?? {}
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  function load() {
     if (!interviewId) return
+    setError(null)
     generateQuestions(interviewId)
-      .then(setQuestionSet)
+      .then((questionSet) => {
+        const first = questionSet.questions[0]
+        if (!first) return
+        navigate(`/record/${first.id}/start`, {
+          state: {
+            questions: questionSet.questions,
+            currentIndex: 0,
+            interviewId,
+          },
+        })
+      })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "질문 생성에 실패했습니다.")
+        setError(err instanceof Error ? err.message : "면접 세션을 생성하지 못했습니다.")
       )
-  }, [interviewId])
+  }
+
+  useEffect(load, [interviewId])
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1>질문 리스트</h1>
-
-      {error && <ErrorState message={error} />}
-
-      {!error && !questionSet && (
-        <LoadingState message="질문을 생성하는 중입니다..." />
-      )}
-
-      {questionSet && (
-        <ul className="flex flex-col gap-3">
-          {questionSet.questions.map((question, index) => (
-            <li key={question.id} className="flex items-center justify-between gap-4">
-              <span>{question.text}</span>
-              <Link
-                to={`/record/${question.id}/start`}
-                state={{
-                  questions: questionSet.questions,
-                  currentIndex: index,
-                  interviewId,
-                }}
-                className="shrink-0 underline"
-              >
-                답변 시작
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="flex min-h-screen flex-col">
+      <Header right={<DurationBadge minutes={durationMinutes} />} />
+      <div className="mx-auto flex w-full max-w-[678px] flex-1 flex-col items-center justify-center gap-8 py-10 text-center">
+        {error ? (
+          <>
+            <div className="flex size-[88px] items-center justify-center rounded-full bg-destructive">
+              <X size={44} strokeWidth={3} className="text-white" />
+            </div>
+            <p className="text-heading font-bold text-foreground">{error}</p>
+            <Button className="h-[60px] w-[284px] text-label" onClick={load}>
+              다시 시도
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="size-[88px] animate-spin rounded-full border-[6px] border-border border-t-primary" />
+            <div className="flex flex-col gap-6">
+              <p className="text-heading font-bold text-foreground">
+                면접 질문을 준비하고 있습니다.
+              </p>
+              <p className="text-2xl text-contents-tertiary">
+                기업 / 직무 / 경력 정보를 바탕으로 질문 세트와 출제 순서를 저장합니다.
+              </p>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
