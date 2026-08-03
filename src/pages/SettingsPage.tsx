@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
-import { AlertTriangle, Eye, EyeOff, User } from "lucide-react"
+import { AlertTriangle, ChevronDown, Eye, EyeOff, User, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ErrorState } from "@/components/ErrorState"
 import { LoadingState } from "@/components/LoadingState"
@@ -21,8 +21,20 @@ import {
   type ProfileValues,
 } from "@/lib/settingsValidation"
 
+// ponytail: 화면설계서에 관심 직무 옵션 목록이 명시되어 있지 않아 임의 구성 — 실제 목록 확정 시 교체
+const JOB_OPTIONS = [
+  "서비스 기획",
+  "프론트엔드 개발",
+  "백엔드 개발",
+  "디자인",
+  "마케팅",
+  "영업",
+  "인사",
+  "기타",
+]
+
 const FIELD_CLASS =
-  "h-12 w-full rounded-[12px] border border-input bg-background px-4 text-sm text-foreground placeholder:text-contents-tertiary focus:outline-none focus:ring-2 focus:ring-ring"
+  "h-12 w-full rounded-[12px] border border-input bg-background px-4 text-[15px] text-foreground placeholder:text-contents-tertiary focus:outline-none focus:ring-2 focus:ring-ring"
 const LABEL_CLASS = "text-sm font-medium text-contents-secondary"
 
 function Card({ children }: { children: ReactNode }) {
@@ -174,9 +186,12 @@ export function SettingsPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-heading font-bold text-foreground">설정</h1>
+    <div className="-m-8 flex flex-col">
+      <div className="border-b border-border px-8 pt-6 pb-4">
+        <h1 className="text-[20px] leading-[30px] font-semibold text-foreground">설정</h1>
+      </div>
 
+      <div className="flex flex-col gap-6 p-8">
       <Card>
         <h2 className="text-label font-bold text-foreground">프로필 수정</h2>
         <p className="mt-1.5 text-sm text-contents-tertiary">
@@ -208,15 +223,29 @@ export function SettingsPage() {
               <label htmlFor="interestedJobRole" className={LABEL_CLASS}>
                 관심 직무
               </label>
-              <input
-                id="interestedJobRole"
-                value={profile.interestedJobRole}
-                onChange={(e) =>
-                  handleProfileChange("interestedJobRole", e.target.value)
-                }
-                placeholder="직무를 입력하세요"
-                className={FIELD_CLASS}
-              />
+              <div className="relative">
+                <select
+                  id="interestedJobRole"
+                  value={profile.interestedJobRole}
+                  onChange={(e) =>
+                    handleProfileChange("interestedJobRole", e.target.value)
+                  }
+                  className={cn(FIELD_CLASS, "appearance-none pr-10")}
+                >
+                  <option value="" disabled>
+                    직무를 선택하세요
+                  </option>
+                  {JOB_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={16}
+                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-contents-tertiary"
+                />
+              </div>
               {profileErrors.interestedJobRole && (
                 <p className="text-xs text-destructive">
                   {profileErrors.interestedJobRole}
@@ -256,7 +285,12 @@ export function SettingsPage() {
 
         <div className="mt-7 flex items-center justify-between">
           <span className="text-base font-semibold text-foreground">로그인 정보</span>
-          <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleLogout}
+            className="h-10 rounded-[10px] border-[#E8EAF0] px-5 text-sm"
+          >
             로그아웃
           </Button>
         </div>
@@ -347,8 +381,8 @@ export function SettingsPage() {
                 <Button
                   type="button"
                   variant="destructive"
-                  size="sm"
                   onClick={() => withdrawDialogRef.current?.showModal()}
+                  className="h-10 rounded-[10px] px-5 text-sm"
                 >
                   탈퇴하기
                 </Button>
@@ -357,37 +391,59 @@ export function SettingsPage() {
           </div>
         </div>
       </Card>
+      </div>
 
       <dialog
         ref={withdrawDialogRef}
-        className="rounded-lg border border-border p-4 backdrop:bg-black/50"
+        className="w-[480px] rounded-[20px] border-none p-0 shadow-[0_20px_30px_rgba(0,0,0,0.18)] backdrop:bg-[rgba(23,25,26,0.42)]"
       >
-        <h2 className="text-sm font-medium">정말 계정을 삭제하시겠습니까?</h2>
-        <p className="mt-2 max-w-sm text-sm text-destructive">
-          계정을 삭제하면 식별 가능한 정보(이메일/이름/비밀번호)가 즉시 마스킹되어 복구할
-          수 없습니다. 면접 기록과 사용자 정보는 탈퇴 즉시 파기됩니다.
-        </p>
-        {withdrawStatus === "error" && (
-          <div className="mt-2">
-            <ErrorState message={withdrawError!} retry={submitWithdraw} />
-          </div>
-        )}
-        <div className="mt-3 flex gap-2">
-          <Button
+        <div className="relative px-9 pt-9 pb-8">
+          <button
             type="button"
-            variant="outline"
             onClick={() => withdrawDialogRef.current?.close()}
+            className="absolute top-9 right-9 text-contents-tertiary"
+            aria-label="닫기"
           >
-            취소
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={submitWithdraw}
-            disabled={withdrawStatus === "submitting"}
-          >
-            탈퇴하기
-          </Button>
+            <X size={18} />
+          </button>
+          <h2 className="pr-7 text-[22px] font-bold tracking-[-0.4px] text-foreground">
+            정말 계정을 삭제하시겠습니까?
+          </h2>
+          <div className="mt-6 flex gap-2.5 rounded-[14px] border border-[#FECACA] bg-[#FEF2F2] px-5 py-[18px]">
+            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-destructive" />
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-bold text-destructive">계정 삭제 (탈퇴)</span>
+              <p className="text-[13px] leading-relaxed text-[#EF4444]">
+                계정을 삭제하면 식별 가능한 정보 (이메일 / 이름 / 비밀번호) 가 즉시
+                마스킹되어 복구할 수 없습니다. 면접 기록과 사용자 정보는 탈퇴 즉시
+                영구적으로 삭제됩니다.
+              </p>
+            </div>
+          </div>
+          {withdrawStatus === "error" && (
+            <div className="mt-4">
+              <ErrorState message={withdrawError!} retry={submitWithdraw} />
+            </div>
+          )}
+          <div className="mt-7 flex justify-end gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => withdrawDialogRef.current?.close()}
+              className="h-10 rounded-[10px] border-[#E8EAF0] px-5 text-[15px] font-semibold"
+            >
+              취소
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={submitWithdraw}
+              disabled={withdrawStatus === "submitting"}
+              className="h-10 rounded-[10px] border-none bg-destructive px-5 text-[15px] font-semibold text-primary-foreground hover:brightness-90"
+            >
+              탈퇴하기
+            </Button>
+          </div>
         </div>
       </dialog>
     </div>
