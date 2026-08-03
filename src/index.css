@@ -146,4 +146,7 @@
   html {
     @apply font-sans;
     }
+  dialog[open] {
+    margin: auto;
+    }
 }
