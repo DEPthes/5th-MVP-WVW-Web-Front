@@ -4,14 +4,14 @@ import { validatePasswordChange, validateProfile } from "@/lib/settingsValidatio
 describe("validateProfile", () => {
   it("returns no errors when all fields are filled", () => {
     expect(
-      validateProfile({ nickname: "닉네임", interestedJobRole: "백엔드" })
+      validateProfile({ nickname: "닉네임", desiredPosition: "백엔드" })
     ).toEqual({})
   })
 
   it("flags empty or whitespace-only fields", () => {
-    const errors = validateProfile({ nickname: "", interestedJobRole: "   " })
+    const errors = validateProfile({ nickname: "", desiredPosition: "   " })
     expect(errors.nickname).toBeDefined()
-    expect(errors.interestedJobRole).toBeDefined()
+    expect(errors.desiredPosition).toBeDefined()
   })
 })
 

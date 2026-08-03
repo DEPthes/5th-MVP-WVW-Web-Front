@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
-import { useLocation, useNavigate, useParams } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Clock, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/Header"
-import { generateQuestions } from "@/lib/api"
+import { createInterviewSession } from "@/lib/api"
 
 function DurationBadge({ minutes }: { minutes?: number }) {
   if (!minutes) return null
@@ -17,26 +17,38 @@ function DurationBadge({ minutes }: { minutes?: number }) {
   )
 }
 
+type SetupNavState = {
+  applicationProfileId?: number
+  interviewType?: string
+  durationMinutes?: number
+}
+
 export function QuestionListPage() {
-  const { interviewId } = useParams<{ interviewId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
-  const { durationMinutes } =
-    (location.state as { durationMinutes?: number } | null) ?? {}
+  const { applicationProfileId, interviewType, durationMinutes } =
+    (location.state as SetupNavState | null) ?? {}
   const [error, setError] = useState<string | null>(null)
 
   function load() {
-    if (!interviewId) return
+    if (!applicationProfileId || !interviewType || !durationMinutes) {
+      // 면접 조건 설정을 거치지 않고 직접 들어온 경우(새로고침 등) — 설정 화면으로 되돌린다.
+      navigate("/interviews/new", { replace: true })
+      return
+    }
     setError(null)
-    generateQuestions(interviewId)
-      .then((questionSet) => {
-        const first = questionSet.questions[0]
+    createInterviewSession({ applicationProfileId, interviewType, durationMinutes })
+      .then((session) => {
+        const first = session.questions[0]
         if (!first) return
-        navigate(`/record/${first.id}/start`, {
+        navigate(`/record/${first.questionId}/start`, {
           state: {
-            questions: questionSet.questions,
+            questions: session.questions.map((q) => ({
+              id: String(q.questionId),
+              text: q.content,
+            })),
             currentIndex: 0,
-            interviewId,
+            interviewId: String(session.sessionId),
           },
         })
       })
@@ -45,7 +57,7 @@ export function QuestionListPage() {
       )
   }
 
-  useEffect(load, [interviewId])
+  useEffect(load, [applicationProfileId, interviewType, durationMinutes])
 
   return (
     <div className="flex min-h-screen flex-col">

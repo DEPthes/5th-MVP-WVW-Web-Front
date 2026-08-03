@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Footer } from "@/components/Footer"
 import { Header } from "@/components/Header"
 import { LoadingState } from "@/components/LoadingState"
-import { setToken, signup } from "@/lib/api"
+import { signup } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import {
   validateSignup,
@@ -14,7 +14,7 @@ import {
 } from "@/lib/authValidation"
 
 const INITIAL_VALUES: SignupValues = {
-  userId: "",
+  loginId: "",
   email: "",
   password: "",
   confirmPassword: "",
@@ -22,8 +22,8 @@ const INITIAL_VALUES: SignupValues = {
   agreedToPrivacy: false,
 }
 
-// ponytail: 기획서상 회원가입 후 "초기 프로필 설정"으로 이동해야 하나 해당 화면 미구현 — 홈으로 임시 대체.
-const DEFAULT_REDIRECT = "/"
+// 회원가입 API는 토큰을 돌려주지 않으므로 가입 후 로그인 화면으로 이동한다.
+const DEFAULT_REDIRECT = "/login"
 
 // ponytail: 실제 개인정보 수집·이용 안내 문구 확정 전 자리표시자.
 const PRIVACY_NOTICE = "개인정보 수집 및 이용 안내 문구는 준비 중입니다."
@@ -58,10 +58,9 @@ export function SignupPage() {
   function submit() {
     setStatus("submitting")
     setSubmitError(null)
-    const { userId, email, password, name } = values
-    signup({ userId, email, password, name })
-      .then(({ token }) => {
-        setToken(token)
+    const { loginId, email, password, name, agreedToPrivacy } = values
+    signup({ loginId, email, password, name, privacyAgreed: agreedToPrivacy })
+      .then(() => {
         navigate(DEFAULT_REDIRECT, { replace: true })
       })
       .catch((err) => {
@@ -114,25 +113,25 @@ export function SignupPage() {
 
           <div className="flex flex-col gap-2">
             <label
-              htmlFor="userId"
+              htmlFor="loginId"
               className="text-label font-semibold text-contents-secondary"
             >
               아이디
             </label>
             <input
-              id="userId"
-              value={values.userId}
-              onChange={(e) => handleChange("userId", e.target.value)}
+              id="loginId"
+              value={values.loginId}
+              onChange={(e) => handleChange("loginId", e.target.value)}
               placeholder="아이디를 입력하세요"
-              className={fieldClass(Boolean(errors.userId))}
+              className={fieldClass(Boolean(errors.loginId))}
             />
             <p
               className={cn(
                 "text-xs",
-                errors.userId ? "text-destructive" : "text-contents-tertiary"
+                errors.loginId ? "text-destructive" : "text-contents-tertiary"
               )}
             >
-              {errors.userId ?? USER_ID_HINT}
+              {errors.loginId ?? USER_ID_HINT}
             </p>
           </div>
 

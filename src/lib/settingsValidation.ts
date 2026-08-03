@@ -1,6 +1,6 @@
 export interface ProfileValues {
   nickname: string
-  interestedJobRole: string
+  desiredPosition: string
 }
 
 export type ProfileErrors = Partial<Record<keyof ProfileValues, string>>
@@ -8,8 +8,8 @@ export type ProfileErrors = Partial<Record<keyof ProfileValues, string>>
 export function validateProfile(values: ProfileValues): ProfileErrors {
   const errors: ProfileErrors = {}
   if (!values.nickname.trim()) errors.nickname = "닉네임을 입력해주세요."
-  if (!values.interestedJobRole.trim()) {
-    errors.interestedJobRole = "관심 직무를 입력해주세요."
+  if (!values.desiredPosition.trim()) {
+    errors.desiredPosition = "관심 직무를 입력해주세요."
   }
   return errors
 }

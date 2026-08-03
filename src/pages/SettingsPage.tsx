@@ -9,6 +9,7 @@ import {
   changePassword,
   clearToken,
   getUserProfile,
+  logout,
   updateUserProfile,
   withdrawAccount,
 } from "@/lib/api"
@@ -48,10 +49,10 @@ function Card({ children }: { children: ReactNode }) {
 export function SettingsPage() {
   const navigate = useNavigate()
 
-  const [userId, setUserId] = useState("")
+  const [loginId, setLoginId] = useState("")
   const [profile, setProfile] = useState<ProfileValues>({
     nickname: "",
-    interestedJobRole: "",
+    desiredPosition: "",
   })
   const [profileErrors, setProfileErrors] = useState<ProfileErrors>({})
   const [profileStatus, setProfileStatus] = useState<
@@ -63,8 +64,8 @@ export function SettingsPage() {
     // ponytail: getUserProfile() API 대기 중 — 실패해도 빈 폼으로 계속 진행
     getUserProfile()
       .then((data) => {
-        setUserId(data.userId)
-        setProfile({ nickname: data.nickname, interestedJobRole: data.interestedJobRole })
+        setLoginId(data.loginId)
+        setProfile({ nickname: data.nickname, desiredPosition: data.desiredPosition })
       })
       .catch(() => {})
   }, [])
@@ -116,7 +117,11 @@ export function SettingsPage() {
   function submitPasswordChange() {
     setPasswordStatus("submitting")
     setPasswordError(null)
-    changePassword(passwordValues)
+    changePassword({
+      currentPassword: passwordValues.currentPassword,
+      newPassword: passwordValues.newPassword,
+      newPasswordConfirm: passwordValues.confirmPassword,
+    })
       .then(() => {
         setPasswordStatus("done")
         setPasswordValues({ currentPassword: "", newPassword: "", confirmPassword: "" })
@@ -137,8 +142,10 @@ export function SettingsPage() {
   }
 
   function handleLogout() {
-    clearToken()
-    navigate("/login")
+    logout().finally(() => {
+      clearToken()
+      navigate("/login")
+    })
   }
 
   const withdrawDialogRef = useRef<HTMLDialogElement>(null)
@@ -220,15 +227,15 @@ export function SettingsPage() {
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="interestedJobRole" className={LABEL_CLASS}>
+              <label htmlFor="desiredPosition" className={LABEL_CLASS}>
                 관심 직무
               </label>
               <div className="relative">
                 <select
-                  id="interestedJobRole"
-                  value={profile.interestedJobRole}
+                  id="desiredPosition"
+                  value={profile.desiredPosition}
                   onChange={(e) =>
-                    handleProfileChange("interestedJobRole", e.target.value)
+                    handleProfileChange("desiredPosition", e.target.value)
                   }
                   className={cn(FIELD_CLASS, "appearance-none pr-10")}
                 >
@@ -246,9 +253,9 @@ export function SettingsPage() {
                   className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-contents-tertiary"
                 />
               </div>
-              {profileErrors.interestedJobRole && (
+              {profileErrors.desiredPosition && (
                 <p className="text-xs text-destructive">
-                  {profileErrors.interestedJobRole}
+                  {profileErrors.desiredPosition}
                 </p>
               )}
             </div>
@@ -296,11 +303,11 @@ export function SettingsPage() {
         </div>
         <div className="mt-3 flex flex-col gap-1.5">
           <label htmlFor="loginInfo" className={LABEL_CLASS}>
-            이메일
+            아이디
           </label>
           <input
             id="loginInfo"
-            value={userId}
+            value={loginId}
             readOnly
             className={cn(FIELD_CLASS, "border-[#F0F2F5] bg-[#F8FAFB] text-contents-tertiary")}
           />

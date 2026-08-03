@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   useState,
   type FormEvent,
@@ -11,34 +12,26 @@ import { ErrorState } from "@/components/ErrorState"
 import { LoadingState } from "@/components/LoadingState"
 import { cn } from "@/lib/utils"
 import {
-  createApplicantProfile,
-  createInterviewSetup,
-  updateApplicantProfile,
+  createApplicationProfile,
+  listApplicationProfiles,
+  updateApplicationProfile,
 } from "@/lib/api"
 import {
   validateInterviewSetup,
   type InterviewSetupErrors,
   type InterviewSetupValues,
 } from "@/lib/interviewSetupValidation"
-import type { ApplicantProfile } from "@/types"
+import { CAREER_LEVEL_LABELS, CAREER_LEVEL_OPTIONS } from "@/lib/careerLevels"
+import type { ApplicationProfile, CareerLevel } from "@/types"
 
-// 화면설계서 프로필 등록 모달 기준 경력 카테고리
-const CAREER_OPTIONS = [
-  "관련 경력",
-  "유사 경력",
-  "무경력",
-  "정규직 경력",
-  "계약직·프리랜서 경력",
-  "인턴 및 현장실습",
-]
-const INTERVIEW_TYPE_OPTIONS = ["종합 면접"]
+const INTERVIEW_TYPE_OPTIONS = [{ value: "COMPREHENSIVE", label: "종합 면접" }]
 const DURATION_OPTIONS = [5, 10, 15, 20] as const
 
 const INITIAL_VALUES: InterviewSetupValues = {
   companyName: "",
-  jobRole: "",
-  careerYears: CAREER_OPTIONS[0],
-  interviewType: INTERVIEW_TYPE_OPTIONS[0],
+  jobPosition: "",
+  careerLevel: CAREER_LEVEL_OPTIONS[0],
+  interviewType: INTERVIEW_TYPE_OPTIONS[0].value,
   durationMinutes: 10,
 }
 
@@ -76,18 +69,27 @@ export function InterviewSetupPage() {
   >("idle")
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // ponytail: listApplicantProfiles() API 대기 중 — 이번 세션에서 등록/수정한 프로필만 목록에 반영
-  const [profiles, setProfiles] = useState<ApplicantProfile[]>([])
+  const [profiles, setProfiles] = useState<ApplicationProfile[]>([])
   const [selectedProfileId, setSelectedProfileId] = useState("")
+
+  useEffect(() => {
+    listApplicationProfiles()
+      .then(setProfiles)
+      .catch(() => {})
+  }, [])
 
   const profileDialogRef = useRef<HTMLDialogElement>(null)
   const [profileDialogMode, setProfileDialogMode] = useState<"new" | "edit">(
     "new"
   )
-  const [profileDraft, setProfileDraft] = useState({
+  const [profileDraft, setProfileDraft] = useState<{
+    companyName: string
+    jobPosition: string
+    careerLevel: CareerLevel
+  }>({
     companyName: "",
-    jobRole: "",
-    careerYears: CAREER_OPTIONS[0],
+    jobPosition: "",
+    careerLevel: CAREER_LEVEL_OPTIONS[0],
   })
   const [profileStatus, setProfileStatus] = useState<
     "idle" | "submitting" | "error"
@@ -103,33 +105,37 @@ export function InterviewSetupPage() {
 
   function handleSelectProfile(profileId: string) {
     setSelectedProfileId(profileId)
-    const profile = profiles.find((p) => p.id === profileId)
+    const profile = profiles.find((p) => String(p.id) === profileId)
     if (profile) {
       setValues((prev) => ({
         ...prev,
         companyName: profile.companyName,
-        jobRole: profile.jobRole,
-        careerYears: profile.careerYears,
+        jobPosition: profile.jobPosition,
+        careerLevel: profile.careerLevel,
       }))
     }
   }
 
   function openNewProfileDialog() {
     setProfileDialogMode("new")
-    setProfileDraft({ companyName: "", jobRole: "", careerYears: CAREER_OPTIONS[0] })
+    setProfileDraft({
+      companyName: "",
+      jobPosition: "",
+      careerLevel: CAREER_LEVEL_OPTIONS[0],
+    })
     setProfileStatus("idle")
     setProfileError(null)
     profileDialogRef.current?.showModal()
   }
 
   function openEditProfileDialog() {
-    const profile = profiles.find((p) => p.id === selectedProfileId)
+    const profile = profiles.find((p) => String(p.id) === selectedProfileId)
     if (!profile) return
     setProfileDialogMode("edit")
     setProfileDraft({
       companyName: profile.companyName,
-      jobRole: profile.jobRole,
-      careerYears: profile.careerYears,
+      jobPosition: profile.jobPosition,
+      careerLevel: profile.careerLevel,
     })
     setProfileStatus("idle")
     setProfileError(null)
@@ -141,17 +147,17 @@ export function InterviewSetupPage() {
     setProfileError(null)
     const request =
       profileDialogMode === "new"
-        ? createApplicantProfile(profileDraft)
-        : updateApplicantProfile(selectedProfileId, profileDraft)
+        ? createApplicationProfile(profileDraft)
+        : updateApplicationProfile(Number(selectedProfileId), profileDraft)
     request
       .then((profile) => {
         setProfiles((prev) => [...prev.filter((p) => p.id !== profile.id), profile])
-        setSelectedProfileId(profile.id)
+        setSelectedProfileId(String(profile.id))
         setValues((prev) => ({
           ...prev,
           companyName: profile.companyName,
-          jobRole: profile.jobRole,
-          careerYears: profile.careerYears,
+          jobPosition: profile.jobPosition,
+          careerLevel: profile.careerLevel,
         }))
         profileDialogRef.current?.close()
       })
@@ -166,12 +172,25 @@ export function InterviewSetupPage() {
   function submit() {
     setSubmitStatus("submitting")
     setSubmitError(null)
-    createInterviewSetup(values)
-      .then((setup) =>
-        navigate(`/questions/${setup.id}`, {
-          state: { durationMinutes: values.durationMinutes },
+
+    const applicationProfileIdPromise = selectedProfileId
+      ? Promise.resolve(Number(selectedProfileId))
+      : createApplicationProfile({
+          companyName: values.companyName,
+          jobPosition: values.jobPosition,
+          careerLevel: values.careerLevel,
+        }).then((profile) => profile.id)
+
+    applicationProfileIdPromise
+      .then((applicationProfileId) => {
+        navigate("/questions/new", {
+          state: {
+            applicationProfileId,
+            interviewType: values.interviewType,
+            durationMinutes: values.durationMinutes,
+          },
         })
-      )
+      })
       .catch((err) => {
         setSubmitStatus("error")
         setSubmitError(err instanceof Error ? err.message : "저장에 실패했습니다.")
@@ -226,7 +245,7 @@ export function InterviewSetupPage() {
             <option value="">새로 입력</option>
             {profiles.map((profile) => (
               <option key={profile.id} value={profile.id}>
-                {profile.jobRole} / {profile.careerYears}
+                {profile.jobPosition} / {CAREER_LEVEL_LABELS[profile.careerLevel]}
               </option>
             ))}
           </SelectField>
@@ -272,34 +291,36 @@ export function InterviewSetupPage() {
               )}
             </div>
             <div className="flex flex-col gap-2">
-              <label htmlFor="jobRole" className={LABEL_CLASS}>
+              <label htmlFor="jobPosition" className={LABEL_CLASS}>
                 직무
               </label>
               <input
-                id="jobRole"
-                value={values.jobRole}
-                onChange={(e) => handleChange("jobRole", e.target.value)}
+                id="jobPosition"
+                value={values.jobPosition}
+                onChange={(e) => handleChange("jobPosition", e.target.value)}
                 placeholder="지원 직무를 입력하세요"
                 className={FIELD_CLASS}
               />
-              {errors.jobRole && (
-                <p className="text-xs text-destructive">{errors.jobRole}</p>
+              {errors.jobPosition && (
+                <p className="text-xs text-destructive">{errors.jobPosition}</p>
               )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <label htmlFor="careerYears" className={LABEL_CLASS}>
+              <label htmlFor="careerLevel" className={LABEL_CLASS}>
                 경력
               </label>
               <SelectField
-                id="careerYears"
-                value={values.careerYears}
-                onChange={(e) => handleChange("careerYears", e.target.value)}
+                id="careerLevel"
+                value={values.careerLevel}
+                onChange={(e) =>
+                  handleChange("careerLevel", e.target.value as CareerLevel)
+                }
               >
-                {CAREER_OPTIONS.map((option) => (
+                {CAREER_LEVEL_OPTIONS.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {CAREER_LEVEL_LABELS[option]}
                   </option>
                 ))}
               </SelectField>
@@ -322,8 +343,8 @@ export function InterviewSetupPage() {
                 onChange={(e) => handleChange("interviewType", e.target.value)}
               >
                 {INTERVIEW_TYPE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </SelectField>
@@ -358,9 +379,13 @@ export function InterviewSetupPage() {
         <dl className="mt-4 flex flex-col">
           {[
             ["기업", values.companyName || "-"],
-            ["직무", values.jobRole || "-"],
-            ["경력", values.careerYears],
-            ["유형", values.interviewType],
+            ["직무", values.jobPosition || "-"],
+            ["경력", CAREER_LEVEL_LABELS[values.careerLevel]],
+            [
+              "유형",
+              INTERVIEW_TYPE_OPTIONS.find((o) => o.value === values.interviewType)
+                ?.label ?? values.interviewType,
+            ],
             ["시간", `${values.durationMinutes}분`],
           ].map(([label, value]) => (
             <div
@@ -432,16 +457,16 @@ export function InterviewSetupPage() {
             </div>
             <div className="flex flex-col gap-2">
               <label
-                htmlFor="profileJobRole"
+                htmlFor="profileJobPosition"
                 className="text-label font-semibold tracking-[-0.2px] text-contents-secondary"
               >
                 지원 직무
               </label>
               <input
-                id="profileJobRole"
-                value={profileDraft.jobRole}
+                id="profileJobPosition"
+                value={profileDraft.jobPosition}
                 onChange={(e) =>
-                  setProfileDraft((prev) => ({ ...prev, jobRole: e.target.value }))
+                  setProfileDraft((prev) => ({ ...prev, jobPosition: e.target.value }))
                 }
                 placeholder="지원 직무를 입력해주세요."
                 className="h-[59px] w-full rounded-[12px] border border-[#D1D5DB] bg-background px-4 text-sm text-foreground placeholder:text-contents-tertiary focus:outline-none focus:ring-2 focus:ring-ring"
@@ -449,23 +474,26 @@ export function InterviewSetupPage() {
             </div>
             <div className="flex flex-col gap-2">
               <label
-                htmlFor="profileCareerYears"
+                htmlFor="profileCareerLevel"
                 className="text-label font-semibold tracking-[-0.2px] text-contents-secondary"
               >
                 경력
               </label>
               <div className="relative">
                 <select
-                  id="profileCareerYears"
-                  value={profileDraft.careerYears}
+                  id="profileCareerLevel"
+                  value={profileDraft.careerLevel}
                   onChange={(e) =>
-                    setProfileDraft((prev) => ({ ...prev, careerYears: e.target.value }))
+                    setProfileDraft((prev) => ({
+                      ...prev,
+                      careerLevel: e.target.value as CareerLevel,
+                    }))
                   }
                   className="h-14 w-full appearance-none rounded-[12px] border border-[#D1D5DB] bg-background px-4 pr-10 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {CAREER_OPTIONS.map((option) => (
+                  {CAREER_LEVEL_OPTIONS.map((option) => (
                     <option key={option} value={option}>
-                      {option}
+                      {CAREER_LEVEL_LABELS[option]}
                     </option>
                   ))}
                 </select>
@@ -506,13 +534,13 @@ export function InterviewSetupPage() {
               disabled={
                 profileStatus === "submitting" ||
                 !profileDraft.companyName.trim() ||
-                !profileDraft.jobRole.trim()
+                !profileDraft.jobPosition.trim()
               }
               className={cn(
                 "h-14 flex-[3] rounded-[12px] text-label font-semibold tracking-[-0.4px] text-primary-foreground",
                 profileStatus === "submitting" ||
                   !profileDraft.companyName.trim() ||
-                  !profileDraft.jobRole.trim()
+                  !profileDraft.jobPosition.trim()
                   ? "bg-[#C7D8FA]"
                   : "bg-primary shadow-[0_2px_4px_rgba(53,99,233,0.22)]"
               )}

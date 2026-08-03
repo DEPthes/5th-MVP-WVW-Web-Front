@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Footer } from "@/components/Footer"
 import { Header } from "@/components/Header"
 import { LoadingState } from "@/components/LoadingState"
-import { login, setToken } from "@/lib/api"
+import { login, setTokens } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import {
   validateLogin,
@@ -13,7 +13,7 @@ import {
   type LoginValues,
 } from "@/lib/authValidation"
 
-const INITIAL_VALUES: LoginValues = { userId: "", password: "", rememberMe: false }
+const INITIAL_VALUES: LoginValues = { loginId: "", password: "", rememberMe: false }
 
 const DEFAULT_REDIRECT = "/"
 
@@ -40,9 +40,9 @@ export function LoginPage() {
   function submit() {
     setStatus("submitting")
     setSubmitError(null)
-    login(values.userId, values.password)
-      .then(({ token }) => {
-        setToken(token, values.rememberMe)
+    login(values.loginId, values.password)
+      .then(({ accessToken, refreshToken }) => {
+        setTokens(accessToken, refreshToken, values.rememberMe)
         const from =
           (location.state as { from?: { pathname: string } } | null)?.from
             ?.pathname ?? DEFAULT_REDIRECT
@@ -80,20 +80,20 @@ export function LoginPage() {
         <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <label
-              htmlFor="userId"
+              htmlFor="loginId"
               className="text-label font-semibold text-contents-secondary"
             >
               아이디
             </label>
             <input
-              id="userId"
-              value={values.userId}
-              onChange={(e) => handleChange("userId", e.target.value)}
+              id="loginId"
+              value={values.loginId}
+              onChange={(e) => handleChange("loginId", e.target.value)}
               placeholder="아이디를 입력하세요"
-              className={fieldClass(Boolean(errors.userId) || hasCredentialError)}
+              className={fieldClass(Boolean(errors.loginId) || hasCredentialError)}
             />
-            {errors.userId && (
-              <p className="text-sm text-destructive">{errors.userId}</p>
+            {errors.loginId && (
+              <p className="text-sm text-destructive">{errors.loginId}</p>
             )}
           </div>
 

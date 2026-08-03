@@ -1,29 +1,52 @@
-import { Link, useParams } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { Link, useLocation, useParams } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
 import { Header } from "@/components/Header"
-import { ReviewQAList } from "@/components/ReviewQAList"
+import { ReviewQAList, type ReviewItem } from "@/components/ReviewQAList"
+import { ErrorState } from "@/components/ErrorState"
+import { LoadingState } from "@/components/LoadingState"
+import { getInterviewDetail } from "@/lib/api"
 
-// ponytail: SessionDetailPage와 같은 자리표시자 데이터 사용 (백엔드 확정 전).
-const DEMO_REVIEWS = [
-  {
-    question: "본인이 지원한 직무에서 가장 중요하다고 생각하는 역량은 무엇인가요?",
-    answer:
-      "저는 서비스 기획 직무에서 가장 중요한 역량은 사용자 중심의 사고라고 생각합니다. 실제로 이전 프로젝트에서 사용자 인터뷰와 데이터 분석을 통해 핵심 문제를 정의하고, 이를 바탕으로 기능 우선순위를 결정하여 전환율을 22% 개선한 경험이 있습니다.",
-  },
-  {
-    question: "팀 내 갈등 상황이 발생했을 때 어떻게 해결했던 경험을 말씀해 주세요.",
-    answer:
-      "디자이너와 개발자 간의 구현 가능성에 대한 의견 충돌이 있었습니다. 저는 양측의 입장을 먼저 듣고 우선순위 기준을 함께 정리해 절충안을 도출했습니다.",
-    failed: true,
-  },
-  {
-    question: "5년 후 본인의 커리어 목표는 무엇인가요?",
-    answer: "5년 후에는 프로덕트 전략을 주도할 수 있는 시니어 기획자로 성장하고 싶습니다.",
-  },
-]
+type QuestionReviewNavState = { reviews?: ReviewItem[] }
 
 export function QuestionReviewPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
+  const location = useLocation()
+  const { reviews: navReviews } =
+    (location.state as QuestionReviewNavState | null) ?? {}
+
+  const [reviews, setReviews] = useState<ReviewItem[] | null>(navReviews ?? null)
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">(
+    navReviews ? "loaded" : "loading"
+  )
+  const [error, setError] = useState<string | null>(null)
+
+  function load() {
+    if (!sessionId) return
+    setStatus("loading")
+    setError(null)
+    getInterviewDetail(Number(sessionId))
+      .then((detail) => {
+        setReviews(
+          detail.qaList.map((qa) => ({
+            question: qa.questionContent,
+            answer: qa.transcript ?? "",
+            failed: !qa.transcript,
+          }))
+        )
+        setStatus("loaded")
+      })
+      .catch((err) => {
+        setStatus("error")
+        setError(err instanceof Error ? err.message : "면접 결과를 불러오지 못했습니다.")
+      })
+  }
+
+  useEffect(() => {
+    if (navReviews) return
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- route state로 이미 받았으면 다시 불러오지 않는다
+  }, [sessionId])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -44,7 +67,11 @@ export function QuestionReviewPage() {
             </Link>
           </div>
           <div className="p-7">
-            <ReviewQAList reviews={DEMO_REVIEWS} />
+            {status === "loading" && <LoadingState message="불러오는 중..." />}
+            {status === "error" && (
+              <ErrorState message={error!} retry={load} />
+            )}
+            {reviews && <ReviewQAList reviews={reviews} />}
           </div>
         </div>
       </div>

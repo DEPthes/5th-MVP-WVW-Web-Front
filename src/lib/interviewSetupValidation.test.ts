@@ -3,9 +3,9 @@ import { validateInterviewSetup } from "@/lib/interviewSetupValidation"
 
 const VALID = {
   companyName: "네이버",
-  jobRole: "서비스 기획",
-  careerYears: "신입",
-  interviewType: "종합 면접",
+  jobPosition: "서비스 기획",
+  careerLevel: "NEWCOMER" as const,
+  interviewType: "COMPREHENSIVE",
   durationMinutes: 10,
 }
 
@@ -18,9 +18,9 @@ describe("validateInterviewSetup", () => {
     const errors = validateInterviewSetup({
       ...VALID,
       companyName: "",
-      jobRole: "   ",
+      jobPosition: "   ",
     })
     expect(errors.companyName).toBeDefined()
-    expect(errors.jobRole).toBeDefined()
+    expect(errors.jobPosition).toBeDefined()
   })
 })

@@ -1,5 +1,5 @@
 export interface LoginValues {
-  userId: string
+  loginId: string
   password: string
   rememberMe: boolean
 }
@@ -8,13 +8,13 @@ export type LoginErrors = Partial<Record<keyof LoginValues, string>>
 
 export function validateLogin(values: LoginValues): LoginErrors {
   const errors: LoginErrors = {}
-  if (!values.userId.trim()) errors.userId = "아이디를 입력해주세요."
+  if (!values.loginId.trim()) errors.loginId = "아이디를 입력해주세요."
   if (!values.password) errors.password = "비밀번호를 입력해주세요."
   return errors
 }
 
 export interface SignupValues {
-  userId: string
+  loginId: string
   email: string
   password: string
   confirmPassword: string
@@ -32,10 +32,10 @@ const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
 
 export function validateSignup(values: SignupValues): SignupErrors {
   const errors: SignupErrors = {}
-  if (!values.userId.trim()) {
-    errors.userId = "아이디를 입력해주세요."
-  } else if (!USER_ID_PATTERN.test(values.userId.trim())) {
-    errors.userId = "영문, 숫자 8~12자 이내로 입력해 주세요."
+  if (!values.loginId.trim()) {
+    errors.loginId = "아이디를 입력해주세요."
+  } else if (!USER_ID_PATTERN.test(values.loginId.trim())) {
+    errors.loginId = "영문, 숫자 8~12자 이내로 입력해 주세요."
   }
   if (!values.email.trim()) {
     errors.email = "이메일을 입력해주세요."

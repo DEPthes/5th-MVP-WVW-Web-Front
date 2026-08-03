@@ -3,8 +3,8 @@ import { Link, useNavigate } from "react-router-dom"
 import { Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { deleteSession, listSessions } from "@/lib/api"
-import type { PracticeSessionSummary } from "@/types"
+import { deleteInterviewSession, listInterviewSessions } from "@/lib/api"
+import type { InterviewSessionSummary } from "@/types"
 
 function formatDate(iso: string) {
   const date = new Date(iso)
@@ -12,8 +12,8 @@ function formatDate(iso: string) {
   return `${date.getMonth() + 1}월 ${date.getDate()}일 (${days[date.getDay()]})`
 }
 
-function groupByDate(sessions: PracticeSessionSummary[]) {
-  const groups = new Map<string, PracticeSessionSummary[]>()
+function groupByDate(sessions: InterviewSessionSummary[]) {
+  const groups = new Map<string, InterviewSessionSummary[]>()
   for (const session of sessions) {
     const key = formatDate(session.createdAt)
     const group = groups.get(key)
@@ -28,28 +28,28 @@ function groupByDate(sessions: PracticeSessionSummary[]) {
 
 export function HomePage() {
   const navigate = useNavigate()
-  const [sessions, setSessions] = useState<PracticeSessionSummary[]>([])
+  const [sessions, setSessions] = useState<InterviewSessionSummary[]>([])
   const [filter, setFilter] = useState<"all" | "completed">("all")
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
-    // ponytail: listSessions() API 대기 중 — 실패해도 빈 목록으로 진행
-    listSessions()
+    // ponytail: listInterviewSessions() 실패해도 빈 목록으로 진행
+    listInterviewSessions()
       .then(setSessions)
       .catch(() => {})
   }, [])
 
-  function openDeleteDialog(id: string) {
+  function openDeleteDialog(id: number) {
     setDeleteTargetId(id)
     dialogRef.current?.showModal()
   }
 
   function confirmDelete() {
     if (!deleteTargetId) return
-    deleteSession(deleteTargetId)
+    deleteInterviewSession(deleteTargetId)
       .then(() => {
-        setSessions((prev) => prev.filter((s) => s.id !== deleteTargetId))
+        setSessions((prev) => prev.filter((s) => s.sessionId !== deleteTargetId))
         dialogRef.current?.close()
       })
       .catch(() => {
@@ -127,7 +127,7 @@ export function HomePage() {
                 <ul className="flex flex-col gap-4">
                   {group.map((session) => (
                     <li
-                      key={session.id}
+                      key={session.sessionId}
                       className="flex items-center gap-5 rounded-[20px] border border-border bg-card p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.06),0_16px_40px_rgba(53,99,233,0.05)]"
                     >
                       <div className="flex size-[52px] shrink-0 items-center justify-center rounded-[14px] border border-primary/15 bg-primary/6">
@@ -136,8 +136,7 @@ export function HomePage() {
 
                       <div className="flex flex-1 flex-col gap-2">
                         <span className="text-label font-semibold text-foreground">
-                          {session.companyName} · {session.jobRole} ·{" "}
-                          {session.careerYears} 채용 면접
+                          {session.companyName} · {session.jobPosition} 채용 면접
                         </span>
                         <div className="flex items-center gap-2.5">
                           <span
@@ -148,7 +147,7 @@ export function HomePage() {
                                 : "bg-destructive/12 text-destructive"
                             )}
                           >
-                            {session.status === "COMPLETED" ? "완료" : "오류"}
+                            {session.status === "COMPLETED" ? "완료" : "실패"}
                           </span>
                           <span className="text-xs font-light text-contents-tertiary">
                             종합 면접 · 10분
@@ -160,14 +159,18 @@ export function HomePage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate(`/sessions/${session.id}`)}
+                          onClick={() =>
+                            navigate(`/sessions/${session.sessionId}`, {
+                              state: { createdAt: session.createdAt },
+                            })
+                          }
                         >
                           피드백
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openDeleteDialog(session.id)}
+                          onClick={() => openDeleteDialog(session.sessionId)}
                         >
                           삭제
                         </Button>

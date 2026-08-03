@@ -1,61 +1,116 @@
-export type ProcessingStatus = "PENDING" | "DONE" | "FAILED"
+export type CareerLevel =
+  | "NEWCOMER"
+  | "RELATED_EXPERIENCE"
+  | "SIMILAR_EXPERIENCE"
+  | "SHALLOW_EXPERIENCE"
+  | "FULL_TIME"
+  | "CONTRACT_FREELANCE"
+  | "INTERNSHIP"
 
 export interface UserProfile {
-  userId: string
+  id: number
+  loginId: string
   nickname: string
-  interestedJobRole: string
+  desiredPosition: string
 }
 
-export interface ApplicantProfile {
-  id: string
+export interface ApplicationProfile {
+  id: number
   companyName: string
-  jobRole: string
-  careerYears: string
+  jobPosition: string
+  careerLevel: CareerLevel
 }
 
-export interface InterviewSetup {
-  id: string
+export type InterviewSessionStatus = "COMPLETED" | "FAILED"
+
+export interface InterviewSessionSummary {
+  sessionId: number
   companyName: string
-  jobRole: string
-  careerYears: string
-  interviewType: string
+  jobPosition: string
+  status: InterviewSessionStatus
+  createdAt: string
+}
+
+export interface InterviewQuestion {
+  questionId: number
+  sequence: number
+  content: string
+}
+
+export interface InterviewSessionStart {
+  sessionId: number
+  status: string
+  companyName: string
+  jobPosition: string
+  careerLevel: CareerLevel
+  questions: InterviewQuestion[]
+}
+
+export type AnswerStatus = "COMPLETED" | "UPLOADED" | "FAILED"
+
+export interface AnswerSubmitResult {
+  answerId: number
+  questionId: number
+  status: AnswerStatus
+}
+
+export interface QuestionAudio {
+  questionId: number
+  audioUrl: string
+  expiresAt: string
+}
+
+export interface Competencies {
+  thinkingScore: number
+  executionScore: number
+  collaborationScore: number
+  growthScore: number
+  adaptabilityScore: number
+}
+
+export interface PositionFit {
+  fitExperienceScore: number
+  fitJobUnderstandingScore: number
+  fitOrganizationScore: number
+}
+
+export type FeedbackPointType = "STRENGTH" | "WEAKNESS"
+
+export interface FeedbackPoint {
+  type: FeedbackPointType
+  title: string
+  description: string
+}
+
+export interface OverallFeedback {
+  totalScore: number
+  overallSummary: string
+  competencies: Competencies
+  positionFit: PositionFit
+  feedbackPoints: FeedbackPoint[]
+}
+
+export interface QuestionFeedback {
+  questionId: number
+  rationale: string
+  improvedAnswer: string
+  followUpQuestion: string
+}
+
+export interface InterviewQaItem {
+  questionId: number
+  sequence: number
+  questionContent: string
+  transcript: string | null
+  feedback: QuestionFeedback | null
+}
+
+export interface InterviewSessionDetail {
+  sessionId: number
+  companyName: string
+  jobPosition: string
+  careerLevel: CareerLevel
   durationMinutes: number
-}
-
-export interface Question {
-  id: string
-  text: string
-}
-
-export interface QuestionSet {
-  id: string
-  interviewId: string
-  questions: Question[]
-}
-
-export interface AnswerRecord {
-  id: string
-  questionId: string
-  transcriptText: string | null
-  feedbackText: string | null
-  durationSeconds: number
-  status: ProcessingStatus
-}
-
-export interface PracticeSession {
-  id: string
-  interviewId: string
-  createdAt: string
-  answers: AnswerRecord[]
-}
-
-export type SessionStatus = "COMPLETED" | "ERROR"
-
-export interface PracticeSessionSummary {
-  id: string
-  companyName: string
-  jobRole: string
-  careerYears: string
-  createdAt: string
-  status: SessionStatus
+  overallFeedback: OverallFeedback
+  qaList: InterviewQaItem[]
 }

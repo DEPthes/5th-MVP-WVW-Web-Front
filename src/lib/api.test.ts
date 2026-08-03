@@ -24,7 +24,7 @@ function makeStorage(store: Record<string, string>): Storage {
   location: { href: "" },
 }
 
-import { clearToken, getAnswer, getToken, setToken, uploadAnswer } from "@/lib/api"
+import { clearToken, getAccessToken, getUserProfile, setTokens, submitAnswer } from "@/lib/api"
 
 describe("apiFetch", () => {
   beforeEach(() => {
@@ -34,12 +34,16 @@ describe("apiFetch", () => {
 
   it("returns parsed JSON on success", async () => {
     globalThis.fetch = vi.fn(
-      async () => new Response(JSON.stringify({ id: "1" }), { status: 200 })
+      async () =>
+        new Response(
+          JSON.stringify({ id: 1, loginId: "u", nickname: "n", desiredPosition: "p" }),
+          { status: 200 }
+        )
     ) as typeof fetch
 
-    const result = await getAnswer("1")
+    const result = await getUserProfile()
 
-    expect(result).toEqual({ id: "1" })
+    expect(result.loginId).toBe("u")
   })
 
   it("throws with status and body text on a non-ok response", async () => {
@@ -47,18 +51,18 @@ describe("apiFetch", () => {
       async () => new Response("not found", { status: 404 })
     ) as typeof fetch
 
-    await expect(getAnswer("missing")).rejects.toThrow("API error 404: not found")
+    await expect(getUserProfile()).rejects.toThrow("API error 404: not found")
   })
 
   it("attaches an Authorization header when a token is set", async () => {
-    setToken("abc123")
+    setTokens("abc123", "refresh123")
     let capturedHeaders: Record<string, string> = {}
     globalThis.fetch = vi.fn(async (_url, init?: RequestInit) => {
       capturedHeaders = init?.headers as Record<string, string>
       return new Response(JSON.stringify({}), { status: 200 })
     }) as typeof fetch
 
-    await getAnswer("1")
+    await getUserProfile()
 
     expect(capturedHeaders.Authorization).toBe("Bearer abc123")
   })
@@ -67,23 +71,51 @@ describe("apiFetch", () => {
     let capturedHeaders: Record<string, string> = {}
     globalThis.fetch = vi.fn(async (_url, init?: RequestInit) => {
       capturedHeaders = init?.headers as Record<string, string>
-      return new Response(JSON.stringify({ id: "a1" }), { status: 200 })
+      return new Response(JSON.stringify({ answerId: 1, questionId: 2, status: "COMPLETED" }), {
+        status: 200,
+      })
     }) as typeof fetch
 
-    await uploadAnswer("q1", new Blob(["x"]))
+    await submitAnswer(1, 2, new Blob(["x"]))
 
     expect(capturedHeaders["Content-Type"]).toBeUndefined()
   })
 
-  it("clears the token and redirects to /login on a 401 response", async () => {
-    setToken("abc123")
+  it("reissues the access token once on 401 and retries the original request", async () => {
+    setTokens("expired-access", "refresh-token")
+    let call = 0
+    globalThis.fetch = vi.fn(async (url) => {
+      call++
+      if (typeof url === "string" && url.includes("/auth/reissue")) {
+        return new Response(
+          JSON.stringify({ accessToken: "new-access", refreshToken: "new-refresh" }),
+          { status: 200 }
+        )
+      }
+      if (call === 1) {
+        return new Response("unauthorized", { status: 401 })
+      }
+      return new Response(
+        JSON.stringify({ id: 1, loginId: "u", nickname: "n", desiredPosition: "p" }),
+        { status: 200 }
+      )
+    }) as typeof fetch
+
+    const result = await getUserProfile()
+
+    expect(result.loginId).toBe("u")
+    expect(getAccessToken()).toBe("new-access")
+  })
+
+  it("clears the token and redirects to /login when reissue fails on a 401", async () => {
+    setTokens("expired-access", "refresh-token")
     globalThis.fetch = vi.fn(
       async () => new Response("unauthorized", { status: 401 })
     ) as typeof fetch
 
-    await expect(getAnswer("1")).rejects.toThrow("인증이 만료되었습니다")
+    await expect(getUserProfile()).rejects.toThrow("인증이 만료되었습니다")
 
-    expect(getToken()).toBeNull()
+    expect(getAccessToken()).toBeNull()
     expect(
       (globalThis as unknown as { window: { location: { href: string } } })
         .window.location.href

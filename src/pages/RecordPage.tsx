@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Header } from "@/components/Header"
 import { ErrorState } from "@/components/ErrorState"
 import { useAudioRecorder } from "@/hooks/useAudioRecorder"
-import { uploadAnswer } from "@/lib/api"
+import { completeInterview, getQuestionAudio, submitAnswer } from "@/lib/api"
 
 function formatElapsed(seconds: number) {
   const m = Math.floor(seconds / 60)
@@ -73,22 +73,30 @@ function RecordPageInner() {
   const [elapsed, setElapsed] = useState(0)
   const intentRef = useRef<"finish" | "restart" | null>(null)
   const endDialogRef = useRef<HTMLDialogElement>(null)
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [endStatus, setEndStatus] = useState<"idle" | "ending" | "error">("idle")
+  const [endError, setEndError] = useState<string | null>(null)
 
   function speakQuestion() {
-    if (!questionText || !("speechSynthesis" in window)) return
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(questionText)
-    utterance.lang = "ko-KR"
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    window.speechSynthesis.speak(utterance)
+    if (!interviewId || !questionId) return
+    getQuestionAudio(Number(interviewId), Number(questionId))
+      .then(({ audioUrl }) => {
+        const audio = questionAudioRef.current ?? new Audio()
+        questionAudioRef.current = audio
+        audio.src = audioUrl
+        audio.onplay = () => setIsSpeaking(true)
+        audio.onended = () => setIsSpeaking(false)
+        audio.onerror = () => setIsSpeaking(false)
+        void audio.play()
+      })
+      .catch(() => setIsSpeaking(false))
   }
 
   useEffect(() => {
     speakQuestion()
-    return () => window.speechSynthesis?.cancel()
+    return () => questionAudioRef.current?.pause()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 질문이 바뀔 때(마운트 시)만 1회 재생
-  }, [questionText])
+  }, [questionId])
 
   useEffect(() => {
     if (isSpeaking || status !== "idle") return
@@ -126,7 +134,16 @@ function RecordPageInner() {
         state: { questions, currentIndex: nextIndex, interviewId } satisfies RecordNavState,
       })
     } else if (interviewId) {
-      navigate(`/sessions/${interviewId}/evaluation`)
+      completeInterview(Number(interviewId))
+        .then((feedback) => {
+          navigate(`/sessions/${interviewId}/evaluation`, { state: { feedback } })
+        })
+        .catch((err) => {
+          setUploadStatus("error")
+          setUploadError(
+            err instanceof Error ? err.message : "면접 결과를 생성하지 못했습니다."
+          )
+        })
     } else {
       navigate("/")
     }
@@ -135,7 +152,7 @@ function RecordPageInner() {
   function runUpload(blob: Blob) {
     setUploadStatus("uploading")
     setUploadError(null)
-    uploadAnswer(questionId!, blob)
+    submitAnswer(Number(interviewId), Number(questionId), blob)
       .then(() => {
         goToNextQuestionOrFinish()
       })
@@ -172,8 +189,24 @@ function RecordPageInner() {
   }
 
   function confirmEndInterview() {
-    endDialogRef.current?.close()
-    navigate("/")
+    if (!interviewId) {
+      endDialogRef.current?.close()
+      navigate("/")
+      return
+    }
+    setEndStatus("ending")
+    setEndError(null)
+    completeInterview(Number(interviewId))
+      .then((feedback) => {
+        endDialogRef.current?.close()
+        navigate(`/sessions/${interviewId}/evaluation`, { state: { feedback } })
+      })
+      .catch((err) => {
+        setEndStatus("error")
+        setEndError(
+          err instanceof Error ? err.message : "면접 결과를 생성하지 못했습니다."
+        )
+      })
   }
 
   const isRecording = status === "recording"
@@ -350,12 +383,18 @@ function RecordPageInner() {
             종료 후 다시 면접을 이어서 진행할 수 없습니다.
           </p>
         </div>
+        {endStatus === "error" && (
+          <div className="mt-3">
+            <ErrorState message={endError!} retry={confirmEndInterview} />
+          </div>
+        )}
         <div className="mt-7 flex justify-end gap-3">
           <Button
             type="button"
             variant="outline"
             className="h-10 rounded-[10px] text-[15px] font-semibold"
             onClick={() => endDialogRef.current?.close()}
+            disabled={endStatus === "ending"}
           >
             계속 진행하기
           </Button>
@@ -363,6 +402,7 @@ function RecordPageInner() {
             type="button"
             className="h-10 rounded-[10px] text-[15px] font-semibold"
             onClick={confirmEndInterview}
+            disabled={endStatus === "ending"}
           >
             면접 종료하기
           </Button>

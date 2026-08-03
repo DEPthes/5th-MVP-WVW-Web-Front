@@ -3,20 +3,20 @@ import { validateLogin, validateSignup } from "@/lib/authValidation"
 
 describe("validateLogin", () => {
   it("returns no errors when all fields are filled", () => {
-    const errors = validateLogin({ userId: "user1", password: "pw", rememberMe: false })
+    const errors = validateLogin({ loginId: "user1", password: "pw", rememberMe: false })
     expect(errors).toEqual({})
   })
 
   it("flags empty or whitespace-only fields", () => {
-    const errors = validateLogin({ userId: "   ", password: "", rememberMe: false })
-    expect(errors.userId).toBeDefined()
+    const errors = validateLogin({ loginId: "   ", password: "", rememberMe: false })
+    expect(errors.loginId).toBeDefined()
     expect(errors.password).toBeDefined()
   })
 })
 
 describe("validateSignup", () => {
   const VALID = {
-    userId: "user1234",
+    loginId: "user1234",
     email: "user1@example.com",
     password: "pw123456!",
     confirmPassword: "pw123456!",
@@ -33,9 +33,9 @@ describe("validateSignup", () => {
     expect(errors.email).toBeDefined()
   })
 
-  it("flags a userId that doesn't meet the format rule", () => {
-    const errors = validateSignup({ ...VALID, userId: "short" })
-    expect(errors.userId).toBeDefined()
+  it("flags a loginId that doesn't meet the format rule", () => {
+    const errors = validateSignup({ ...VALID, loginId: "short" })
+    expect(errors.loginId).toBeDefined()
   })
 
   it("flags a password missing a required character class", () => {
@@ -59,14 +59,14 @@ describe("validateSignup", () => {
 
   it("flags empty required fields", () => {
     const errors = validateSignup({
-      userId: "",
+      loginId: "",
       email: "",
       password: "",
       confirmPassword: "",
       name: "",
       agreedToPrivacy: false,
     })
-    expect(errors.userId).toBeDefined()
+    expect(errors.loginId).toBeDefined()
     expect(errors.email).toBeDefined()
     expect(errors.password).toBeDefined()
     expect(errors.name).toBeDefined()

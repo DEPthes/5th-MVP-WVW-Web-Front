@@ -6,7 +6,6 @@ import { InterviewSetupPage } from '@/pages/InterviewSetupPage'
 import { QuestionListPage } from '@/pages/QuestionListPage'
 import { InterviewStartPage } from '@/pages/InterviewStartPage'
 import { RecordPage } from '@/pages/RecordPage'
-import { ResultPage } from '@/pages/ResultPage'
 import { SessionDetailPage } from '@/pages/SessionDetailPage'
 import { QuestionReviewPage } from '@/pages/QuestionReviewPage'
 import { InterviewEvaluationPage } from '@/pages/InterviewEvaluationPage'
@@ -49,7 +48,7 @@ function App() {
         }
       />
       <Route
-        path="/questions/:interviewId"
+        path="/questions/new"
         element={
           <ProtectedRoute>
             <QuestionListPage />
@@ -69,14 +68,6 @@ function App() {
         element={
           <ProtectedRoute>
             <RecordPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/result/:answerId"
-        element={
-          <ProtectedRoute>
-            <ResultPage />
           </ProtectedRoute>
         }
       />
